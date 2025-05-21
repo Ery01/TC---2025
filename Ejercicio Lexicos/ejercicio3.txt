@@ -1,0 +1,164 @@
+class Lexer {
+  constructor() {
+    this.keywords = ['int', 'if', 'while', 'print'];
+    this.operators = ['+', '-', '*', '/', '=', '>', '<', '==', '!='];
+    this.separators = ['(', ')', '{', '}', ';', ','];
+  }
+
+  isKeyword(token) {
+    return this.keywords.includes(token);
+  }
+
+  isOperator(token) {
+    return this.operators.includes(token);
+  }
+
+  isSeparator(token) {
+    return this.separators.includes(token);
+  }
+
+  isNumber(token) {
+    return /^\d+$/.test(token);
+  }
+
+  isString(token) {
+    return /^".*"$/.test(token);
+  }
+
+  isIdentifier(token) {
+    return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(token) && !this.isKeyword(token);
+  }
+
+  getTokenType(token) {
+    if (this.isKeyword(token)) return 'Palabra clave';
+    if (this.isOperator(token)) return 'Operador';
+    if (this.isSeparator(token)) return 'Separador';
+    if (this.isNumber(token)) return 'Literal (entero)';
+    if (this.isString(token)) return 'Literal (cadena de texto)';
+    if (this.isIdentifier(token)) return 'Identificador';
+    return 'Desconocido';
+  }
+
+  tokenize(code) {
+    const lines = code.split('\n');
+    const tokens = [];
+    let currentToken = '';
+    let inString = false;
+    let stringStart = false;
+
+    for (let lineNum = 0; lineNum < lines.length; lineNum++) {
+      const line = lines[lineNum];
+      let colNum = 1;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        
+        if (char === '"' && !inString) {
+          inString = true;
+          stringStart = true;
+          currentToken += char;
+          colNum++;
+          continue;
+        } else if (char === '"' && inString) {
+          inString = false;
+          currentToken += char;
+          tokens.push({
+            token: currentToken,
+            type: this.getTokenType(currentToken),
+            line: lineNum + 1,
+            column: colNum - currentToken.length + 1
+          });
+          currentToken = '';
+          colNum++;
+          continue;
+        }
+
+        if (inString) {
+          currentToken += char;
+          colNum++;
+          continue;
+        }
+
+        if (char === ' ' || char === '\t') {
+          if (currentToken !== '') {
+            tokens.push({
+              token: currentToken,
+              type: this.getTokenType(currentToken),
+              line: lineNum + 1,
+              column: colNum - currentToken.length
+            });
+            currentToken = '';
+          }
+          colNum++;
+          continue;
+        }
+
+        if (this.isOperator(char) || this.isSeparator(char)) {
+          if (currentToken !== '') {
+            tokens.push({
+              token: currentToken,
+              type: this.getTokenType(currentToken),
+              line: lineNum + 1,
+              column: colNum - currentToken.length
+            });
+            currentToken = '';
+          }
+          
+          // Manejar operadores de múltiples caracteres (como ==, !=)
+          let multiCharOp = char + (i < line.length - 1 ? line[i+1] : '');
+          if (this.isOperator(multiCharOp)) {
+            tokens.push({
+              token: multiCharOp,
+              type: 'Operador',
+              line: lineNum + 1,
+              column: colNum
+            });
+            i++;
+            colNum += 2;
+          } else {
+            tokens.push({
+              token: char,
+              type: this.getTokenType(char),
+              line: lineNum + 1,
+              column: colNum
+            });
+            colNum++;
+          }
+          continue;
+        }
+
+        currentToken += char;
+        colNum++;
+      }
+
+      // Al final de la línea, agregar cualquier token pendiente
+      if (currentToken !== '' && !inString) {
+        tokens.push({
+          token: currentToken,
+          type: this.getTokenType(currentToken),
+          line: lineNum + 1,
+          column: colNum - currentToken.length
+        });
+        currentToken = '';
+      }
+    }
+
+    return tokens;
+  }
+}
+
+// Ejemplo de uso
+const code = `int suma = 10 + 5;
+if (suma > 10) {
+    print("El resultado es mayor que 10");
+}`;
+
+const lexer = new Lexer();
+const tokens = lexer.tokenize(code);
+
+// Mostrar resultados en formato de tabla
+console.log('Token\t\t\tTipo\t\t\t\tLínea\tColumna');
+console.log('--------------------------------------------------------------');
+tokens.forEach(token => {
+  console.log(`${token.token}\t\t\t${token.type}\t\t${token.line}\t${token.column}`);
+});

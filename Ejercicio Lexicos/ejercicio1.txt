@@ -1,0 +1,22 @@
+Simbólico                           Tipo                   Línea   Columna
+
+int                                Palabra clave             1         1
+suma                               Identificador             1         5
+=                                  Operador                  1        10
+10                                 Literal (entero)          1        12
++                                  Operador                  1        15
+5                                  Literal (entero)          1        17
+;                                  Separador                 1        18
+if                                 Palabra clave             2         1
+(                                  Separador                 2         4
+suma                               Identificador             2         5
+>                                  Operador                  2        10
+10                                 Literal (entero)          2        12
+)                                  Separador                 2        14
+{                                  Separador                 2        16
+print                              Identificador             3         5
+(                                  Separador                 3        10
+El resultado es mayor que 10       Literal (cadena de texto) 3        11
+)                                  Separador                 3        39
+;                                  Separador                 3        40
+}                                  Separador                 4         1
