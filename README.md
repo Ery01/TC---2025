@@ -26,6 +26,7 @@ if (suma > 10) {
 }
 ```
 
+---
 
 ## 🛠️ Ejercicio 2: Expresiones Regulares
 
