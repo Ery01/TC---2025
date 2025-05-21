@@ -1,36 +1,62 @@
 Fechas (en distintos formatos)
-Formato DD/MM/AAAA: /(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/([0-9]{4})/gm
+Formato DD/MM/AAAA: ^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/([0-9]{4})$
+                    
+Formato AAAA-MM-DD (ISO): ^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$
 
-Formato AAAA-MM-DD (ISO): /([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])/gm
-
-Correos Electrónicos : [a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}
-
-CUIL/CUIT (Argentina): (20|23|24|27|30|33|34)[-]([\d]{8})[-]([\d]{1})
+Fechas con meses en texto (opcional): ^(0?[1-9]|[12][0-9]|3[01])\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic)\s+\d{4}$
 
 
-DNI (Argentina): ([\d]{7,8})
+
+Correos Electrónicos : ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
+
+
+
+CUIL/CUIT (Argentina): ^(20|23|24|27|30|33|34)-(\d{8})-(\d)$
+
+
+
+DNI (Argentina): ^\d{7,8}$
+
+
 
 Números de teléfono
-Formato internacional con +: \+\d{1,3}[-\s]?\d{1,4}[-\s]?\d{4,10}
+Formato internacional con +: ^\+\d{1,3}[-\s]?\d{1,4}[-\s]?\d{4,10}$
 
-Formato nacional con 0 y 15: 
+Formato nacional con 0 y 15: ^(0|\+?54)?(9|0)?(11|15)?[-\s]?\d{2,4}[-\s]?\d{4,6}$
 
-Códigos postales (Argentina): ([A-Z]{1,3}\d{4}|\d{4})
+
+
+Códigos postales (Argentina): ^[A-Z]{1,3}\d{4}[A-Z]{0,3}$|^\d{4}$
+
+
 
 Comentarios (como en lenguajes de programación)
-Comentario de una línea (estilo C/Java): \/\/.*
+Comentario de una línea (estilo C/Java): ^\/\/.*$
 
-Comentario de bloque (estilo C/Java): \/\*[\s\S]*?\*\/
+Comentario de bloque (estilo C/Java): ^\/\*[\s\S]*?\*\/$
+
+
 
 Contraseña segura (mínimo 8 caracteres, una mayúscula, una minúscula, un número y un símbolo)**: 
-(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}
+^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$
 
-Nombres y Apellidos (letras, espacios y tildes)**:[A-Za-zÀ-ÖØ-öø-ÿ\s]+
 
-URLs:
 
-Direcciones IP:(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)
+Nombres y Apellidos (letras, espacios y tildes)**: ^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s']+$
+
+
+
+URLs: ^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+(:\d+)?(\/[^\s]*)?$
+
+
+
+Direcciones IP: ^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$
+
 
 Matrículas de autos: 
 [A-Z]{2}\d{3}[A-Z]{2}
 [A-Z]{3}\d{3}
+
+
+
+Números de tarjeta de crédito: ^\d{4}\s?\d{4}\s?\d{4}\s?\d{4}$
