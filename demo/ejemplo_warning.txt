@@ -1,0 +1,40 @@
+// No usar variables
+void funcionSinUso() {
+    int x;          // Declarada pero no usada
+    int y = 10;     // Declarada pero no usada ni inicializada (y sí inicializada)
+}
+
+
+// No usar funciones
+void funcionNoUsada() {
+    // nunca llamada
+}
+
+// No inicializar variables
+void funcionVariables() {
+    int a;          // declarada pero no inicializada
+    int b = 0;      // inicializada
+}
+
+// Duplicar variables/funciones
+void funcionDuplicada() {
+    int a;
+    int a;          // duplicada, debería dar error o warning
+}
+
+void funcionDuplicada() {
+    // duplicada, misma firma que arriba
+}
+
+// Parámetros no utilizados
+void funcionConParametros(int p1, int p2) {
+    int c = p1;     // p1 usado
+    // p2 no usado
+}
+
+// Bucles infinitos
+void funcionInfinita() {
+    while (true) {
+        // ciclo sin fin
+    }
+}
