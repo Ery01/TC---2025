@@ -4,18 +4,19 @@ programa
     : (sentencia)* EOF
     ;
 
-sentencia
-    : sentenciaIf
-    | sentenciaWhile
-    | sentenciaFor
-    | sentenciaBreak
-    | sentenciaContinue
-    | declaracionFuncion
+sentencia:
+    declaracionFuncion
     | declaracionVariable
     | asignacion
-    | retorno
+    | sentenciaLlamadaFuncion
     ;
-
+sentenciaAnidadas: sentencia
+     |     sentenciaIf
+     | sentenciaWhile
+     | sentenciaFor
+     | sentenciaBreak
+     | sentenciaContinue
+     | retorno;
 sentenciaIf
     : IF PA expresion PC bloque (ELSE bloque)?
     ;
@@ -24,8 +25,21 @@ sentenciaWhile
      : WHILE PA expresion PC bloque
      ;
 
+//sentenciaFor
+//    : FOR PA (declaracionVariable | asignacion)? PYC expresion? PYC asignacion? PC bloque
+//    ;
+
 sentenciaFor
-    : FOR PA (declaracionVariable | asignacion)? PYC expresion? PYC asignacion? PC bloque
+    : FOR PA (inicializacionDeclaracion=declaracionVariableInternaFor
+    | inicializacionExpresion=expresionNoPuntoComa)? PYC (condicion=expresion)? PYC (actualizacion=expresionNoPuntoComa)? PC bloque
+    ;
+
+declaracionVariableInternaFor
+    : tipo ID (IGUAL expresion)?
+    ;
+
+expresionNoPuntoComa
+    : expresion
     ;
 
 sentenciaBreak
@@ -36,8 +50,12 @@ sentenciaContinue
     : CONTINUE PYC
     ;
 
+sentenciaLlamadaFuncion
+    : ID PA argumentos? PC PYC
+    ;
+
 bloque
-    : LA (sentencia)* LC
+    : LA (sentenciaAnidadas)* LC
     ;
 
 declaracionFuncion
@@ -80,6 +98,7 @@ expresion
     | INTEGER                                 #expEntero
     | DECIMAL                                 #expDecimal
     | CHARACTER                               #expCaracter
+    | STRING_LITERAL                          #expCadena
     | TRUE                                     #expTrue
     | FALSE                                    #expFalse
     | ID PA argumentos? PC                    #expFuncion
@@ -147,6 +166,7 @@ ID : (LETRA | '_') (LETRA | DIGITO | '_')* ;
 INTEGER : DIGITO+ ;
 DECIMAL : INTEGER '.' INTEGER ;
 CHARACTER : '\'' (~['\r\n] | '\\' .) '\'' ;
+STRING_LITERAL : '"' ( ~('\\'|'"') | '\\' . )* '"' ;
 
 COMENTARIO_LINEA : '//' ~[\r\n]* -> skip ;
 COMENTARIO_BLOQUE : '/*' .*? '*/' -> skip ;

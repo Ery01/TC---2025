@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack; // ¡Nuevo import!
+import java.util.Comparator; // Para ordenar al imprimir
+import java.util.stream.Collectors; // Para ordenar al imprimir
 
 /**
  * Implementación sencilla de una tabla de símbolos para el compilador
@@ -17,14 +20,11 @@ public class TablaSimbolos {
         private String categoria;   // variable, funcion, parametro
         private int linea;
         private int columna;
-        private String ambito;      // global o nombre_funcion
-        private List<String> parametros;  // Solo para funciones (lista de tipos)
-        public Object valor;
-        private List<Simbolo> simbolos;
-        private boolean usada = false;
-        private boolean inicializada = false;
-
-
+        private String ambito;      // global o nombre_funcion o bloque_X
+        private List<String> parametros;  // Solo para funciones (lista de tipos de parámetros esperados)
+        private Object valor; // Usado para el evaluador de expresiones si es constante
+        private boolean usada;
+        private boolean inicializada;
 
         public Simbolo(String nombre, String tipo, String categoria, int linea, int columna, String ambito,  List<String> parametros) {
             this.nombre = nombre;
@@ -33,9 +33,10 @@ public class TablaSimbolos {
             this.linea = linea;
             this.columna = columna;
             this.ambito = ambito;
-            this.valor = null;
-            this.simbolos = new ArrayList<>();
-            this.parametros = parametros;
+            this.valor = null; // Valor inicial para variables
+            this.parametros = parametros != null ? new ArrayList<>(parametros) : new ArrayList<>();
+            this.usada = false;
+            this.inicializada = false;
         }
 
         public Simbolo(String nombre, String tipo, String categoria, int linea, int columna, String ambito) {
@@ -50,224 +51,169 @@ public class TablaSimbolos {
         public int getColumna() { return columna; }
         public String getAmbito() { return ambito; }
         public List<String> getParametros() { return parametros; }
+        public Object getValor() { return valor; }
+        public boolean isUsada() { return usada; }
+        public boolean isInicializada() { return inicializada; }
 
+        // Setters
+        public void setValor(Object valor) { this.valor = valor; }
+        public void setUsada(boolean usada) { this.usada = usada; }
+        public void setInicializada(boolean inicializada) { this.inicializada = inicializada; }
 
-        // Agregar un parámetro a una función
+        // Agregar un parámetro a una función (solo para el símbolo de la función)
         public void addParametro(String tipo) {
-            parametros.add(tipo);
+            this.parametros.add(tipo);
         }
 
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
-            sb.append(String.format("%-15s %-10s %-15s %-10d %-10d %-15s",
-                    nombre, tipo, categoria, linea, columna, ambito));
+            sb.append(String.format("%-15s %-10s %-15s %-8d %-10d %-15s %-12b %-12b",
+                    nombre, tipo, categoria, linea, columna, ambito, inicializada, usada));
 
-            if (!parametros.isEmpty()) {
-                sb.append(" [");
+            if (categoria.equals("funcion") && !parametros.isEmpty()) {
+                sb.append(" (");
                 for (int i = 0; i < parametros.size(); i++) {
                     sb.append(parametros.get(i));
                     if (i < parametros.size() - 1) {
                         sb.append(", ");
                     }
                 }
-                sb.append("]");
+                sb.append(")");
             }
 
             return sb.toString();
         }
-
-        public boolean isUsada() {
-            return usada;
-        }
-
-        public void setUsada(boolean usada) {
-            this.usada = usada;
-        }
-
-        public boolean isInicializada() {
-            return inicializada;
-        }
-
-        public void setInicializada(boolean inicializada) {
-            this.inicializada = inicializada;
-        }
     }
 
-    // Lista de símbolos
-    private List<Simbolo> simbolos;
-
-    // Ámbito actual (global o nombre de función)
-    private String ambitoActual;
-
-    public List<Simbolo> getSimbolos() {
-        return simbolos;
-    }
-
+    // Usaremos un mapa para almacenar símbolos, con una clave compuesta de nombre y ámbito
+    private Map<String, Simbolo> simbolosMap; // Clave: "nombre_ambito"
 
     /**
      * Constructor
      */
     public TablaSimbolos() {
-        this.simbolos = new ArrayList<>();
-        this.ambitoActual = "global";
+        this.simbolosMap = new HashMap<>();
     }
 
-    /**
-     * Establece el ámbito actual
-     */
-    public void setAmbito(String ambito) {
-        this.ambitoActual = ambito;
-    }
+    // Eliminamos setAmbito y getAmbito ya que el manejo de ámbito se hará con una pila externa
+    // y la búsqueda los usará como parámetro.
 
     /**
-     * Obtiene el ámbito actual
-     */
-    public String getAmbito() {
-        return this.ambitoActual;
-    }
-
-
-    /**
-     * Agrega un símbolo a la tabla
+     * Agrega un símbolo a la tabla.
+     * La clave interna es `nombre_ambito` para permitir mismos nombres en diferentes ámbitos.
      * @param simbolo Símbolo a agregar
      * @return true si se agregó correctamente, false si ya existía en el mismo ámbito
      */
     public boolean agregar(Simbolo simbolo) {
-        // Verificar si ya existe un símbolo con el mismo nombre en el mismo ámbito
-        for (Simbolo s : simbolos) {
-            if (s.getNombre().equals(simbolo.getNombre()) &&
-                    s.getAmbito().equals(simbolo.getAmbito())) {
-                return false;
-            }
+        String clave = simbolo.getNombre() + "_" + simbolo.getAmbito();
+        if (simbolosMap.containsKey(clave)) {
+            return false; // Ya existe un símbolo con este nombre en este ámbito
         }
-
-        // Agregar el símbolo a la tabla
-        simbolos.add(simbolo);
+        simbolosMap.put(clave, simbolo);
         return true;
     }
 
     /**
-     * Busca un símbolo por nombre en el ámbito actual y global
+     * Busca un símbolo por nombre utilizando la pila de ámbitos.
+     * Busca desde el ámbito más interno (cima de la pila) hacia el global.
      * @param nombre Nombre del símbolo a buscar
+     * @param ambitoStack Pila de ámbitos actual
      * @return El símbolo encontrado o null si no existe
      */
-    public Simbolo buscar(String nombre) {
-        // Primero buscar en el ámbito actual
-        for (Simbolo s : simbolos) {
-            if (s.getNombre().equals(nombre) && s.getAmbito().equals(ambitoActual)) {
-                return s;
+    public Simbolo buscar(String nombre, Stack<String> ambitoStack) {
+        // Recorre la pila de ámbitos desde el más interno (cima) hasta el global
+        for (int i = ambitoStack.size() - 1; i >= 0; i--) {
+            String currentAmbito = ambitoStack.get(i);
+            String clave = nombre + "_" + currentAmbito;
+            if (simbolosMap.containsKey(clave)) {
+                return simbolosMap.get(clave);
             }
         }
-
-        // Si no se encuentra y no estamos en ámbito global, buscar en ámbito global
-        if (!ambitoActual.equals("global")) {
-            for (Simbolo s : simbolos) {
-                if (s.getNombre().equals(nombre) && s.getAmbito().equals("global")) {
-                    return s;
-                }
-            }
-        }
-
+        // Si no se encuentra en ningún ámbito específico,
+        // podrías querer buscar funciones que siempre son globales y podrían no tener "global" en su clave
+        // dependiendo de cómo las agregues.
+        // Si las funciones se agregan explícitamente con ámbito "global", la búsqueda anterior las encontrará.
         return null;
     }
 
     /**
-     * Busca un símbolo por nombre y ámbito específico
+     * Busca un símbolo por nombre y ámbito específico.
+     * Útil para buscar funciones (que suelen estar en "global") o para depuración.
      * @param nombre Nombre del símbolo
      * @param ambito Ámbito donde buscar
      * @return El símbolo encontrado o null si no existe
      */
-    public Simbolo buscar(String nombre, String ambito) {
-        for (Simbolo s : simbolos) {
-            if (s.getNombre().equals(nombre) && s.getAmbito().equals(ambito)) {
-                return s;
-            }
-        }
-        return null;
+    public Simbolo buscarEnAmbitoDirecto(String nombre, String ambito) {
+        String clave = nombre + "_" + ambito;
+        return simbolosMap.get(clave);
+    }
+
+
+    /**
+     * Obtiene todos los símbolos en la tabla.
+     * @return Una colección de todos los símbolos.
+     */
+    public List<Simbolo> getTodosSimbolos() {
+        return new ArrayList<>(simbolosMap.values());
     }
 
     /**
-     * Imprime la tabla de símbolos
+     * Imprime la tabla de símbolos.
      */
     public void imprimir() {
         System.out.println("\n=== TABLA DE SÍMBOLOS ===");
-        System.out.printf("%-15s %-10s %-15s %-10s %-10s %-15s %s\n",
-                "NOMBRE", "TIPO", "CATEGORÍA", "LÍNEA", "COLUMNA", "ÁMBITO", "PARÁMETROS");
-        System.out.println("--------------------------------------------------------------------------------------------");
+        System.out.printf("%-15s %-10s %-15s %-8s %-10s %-15s %-12s %-12s %s\n",
+                "NOMBRE", "TIPO", "CAT.", "LÍNEA", "COLUMNA", "ÁMBITO", "INICIALIZADA", "USADA", "PARÁMETROS");
+        System.out.println("--------------------------------------------------------------------------------------------------------------------");
 
-        for (Simbolo s : simbolos) {
-            System.out.println(s);
-        }
+        // Ordenar los símbolos para una salida consistente
+        simbolosMap.values().stream()
+                .sorted(Comparator.comparing(Simbolo::getAmbito)
+                        .thenComparing(Simbolo::getLinea)
+                        .thenComparing(Simbolo::getColumna))
+                .forEach(System.out::println);
     }
 
-    public boolean verificarParametros(String nombreFuncion, List<String> tiposArgs) {
-        Simbolo funcion = buscar(nombreFuncion, "global");
-        if (funcion == null || !funcion.getCategoria().equals("funcion")) {
-            return false;
+    /**
+     * Verifica la compatibilidad de los parámetros de una llamada a función.
+     * @param nombreFuncion Nombre de la función
+     * @param tiposArgumentos Tipos de los argumentos pasados en la llamada
+     * @return true si los parámetros coinciden, false en caso contrario
+     */
+    public boolean verificarParametros(String nombreFuncion, List<String> tiposArgumentos) {
+        // Asumimos que las funciones siempre se buscan en el ámbito "global"
+        Simbolo funcionSimbolo = buscarEnAmbitoDirecto(nombreFuncion, "global");
+
+        if (funcionSimbolo == null || !funcionSimbolo.getCategoria().equals("funcion")) {
+            return false; // La función no existe o no es una función
         }
 
-        List<String> tiposEsperados = funcion.getParametros();
-        if (tiposEsperados.size() != tiposArgs.size()) {
-            return false;
+        List<String> tiposEsperados = funcionSimbolo.getParametros();
+
+        if (tiposEsperados.size() != tiposArgumentos.size()) {
+            return false; // Número de argumentos diferente
         }
 
         for (int i = 0; i < tiposEsperados.size(); i++) {
-            if (!tiposCompatibles(tiposEsperados.get(i), tiposArgs.get(i))) {
-                return false;
+            if (!esTipoCompatible(tiposEsperados.get(i), tiposArgumentos.get(i))) {
+                return false; // Tipos no compatibles
             }
         }
-
         return true;
     }
 
-
-    private boolean tiposCompatibles(String esperado, String real) {
+    /**
+     * Auxiliar para la compatibilidad de tipos (puedes expandirlo).
+     */
+    private boolean esTipoCompatible(String esperado, String real) {
         if (esperado.equals(real)) return true;
-
-        // Reglas de conversión implícita simples
+        // int se puede asignar a double
         if (esperado.equals("double") && real.equals("int")) return true;
+        // char se puede asignar a int o double
+        if (esperado.equals("int") && real.equals("char")) return true;
+        if (esperado.equals("double") && real.equals("char")) return true;
 
         return false;
     }
-
-    // Devuelve true si la variable existe
-    public boolean existe(String nombre) {
-        return buscar(nombre) != null;
-    }
-
-    // Devuelve el valor de una variable si se ha asignado
-    public Object obtenerValor(String nombre) {
-        Simbolo s = buscar(nombre);
-        return s != null ? s.valor : null;
-    }
-
-    // Permite asignar un valor a una variable
-    public void asignarValor(String nombre, Object valor) {
-        Simbolo s = buscar(nombre);
-        if (s != null) {
-            s.valor = valor;
-        } else {
-            System.err.println("Error: no se puede asignar a una variable no declarada: " + nombre);
-        }
-    }
-
-    public boolean existeEnAmbito(String nombre, String ambito) {
-        for (Simbolo s : simbolos) {
-            if (s.getNombre().equals(nombre) && s.getAmbito().equals(ambito)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public Simbolo buscarEnAmbito(String nombre, String ambito) {
-        for (Simbolo s : simbolos) {
-            if (s.getNombre().equals(nombre) && s.getAmbito().equals(ambito)) {
-                return s;
-            }
-        }
-        return null;
-    }
-
 }

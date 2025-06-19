@@ -29,7 +29,7 @@ public class App {
                 public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol,
                                         int line, int charPositionInLine, String msg, RecognitionException e) {
                     erroresLexicos.add("ERROR LÉXICO en línea " + line + ":" + charPositionInLine + " - " + msg);
-                    throw new ParseCancellationException(msg);
+                    throw new ParseCancellationException(msg); // Detener el análisis léxico ante el primer error
                 }
             });
 
@@ -50,7 +50,7 @@ public class App {
                 System.out.println("\n✅ Análisis léxico completado sin errores.");
             } else {
                 erroresLexicos.forEach(System.out::println);
-                return;
+                return; // Salir si hay errores léxicos
             }
 
             // 2. ANÁLISIS SINTÁCTICO
@@ -69,66 +69,75 @@ public class App {
             ParseTree tree = parser.programa();
             if (!erroresSintacticos.isEmpty()) {
                 erroresSintacticos.forEach(System.out::println);
-                return;
+                return; // Salir si hay errores sintácticos
             } else {
                 System.out.println("✅ Análisis sintáctico completado sin errores.");
                 System.out.println("Representación textual del árbol sintáctico:");
                 System.out.println(tree.toStringTree(parser));
             }
 
-            // 3. VISUALIZACIÓN DEL ÁRBOL SINTÁCTICO
-            //generarImagenArbolSintactico(tree, parser);
+            // 3. VISUALIZACIÓN DEL ÁRBOL SINTÁCTICO (Opcional, puede comentar esta línea si no lo necesita)
+            generarImagenArbolSintactico(tree, parser);
 
             // 4. ANÁLISIS SEMÁNTICO
-//            SimbolosListener listener = new SimbolosListener();
-//            ParseTreeWalker walker = new ParseTreeWalker();
-//            walker.walk(listener, tree);
-//
-//            TablaSimbolos tabla = listener.getTablaSimbolos();
-//            tabla.imprimir();
-//
-//            List<String> erroresSemanticos = listener.getErrores();
-//            if (!erroresSemanticos.isEmpty()) {
-//                System.out.println("\n=== ERRORES SEMÁNTICOS ===");
-//                erroresSemanticos.forEach(System.out::println);
-//            } else {
-//                System.out.println("\n✅ Análisis semántico completado sin errores.");
-//            }
-//
-//            List<String> advertencias = listener.getWarnings();
-//            if (!advertencias.isEmpty()) {
-//                System.out.println("\n=== ADVERTENCIAS ===");
-//                advertencias.forEach(System.out::println);
-//            }
+            // FASE 1: Construcción de Tabla de Símbolos y Verificación de Declaraciones/Tipos (Listener)
+            System.out.println("\n=== ANÁLISIS SEMÁNTICO (Fase 1: Listener) ===");
+            SimbolosListener listener = new SimbolosListener();
+            ParseTreeWalker walker = new ParseTreeWalker();
+            walker.walk(listener, tree); // Recorre el árbol con el Listener
 
-            // 2. Crear e invocar el visitor:
-            Caminante visitor = new Caminante();
-            visitor.visit(tree); // Aquí se ejecutan todos los visitXXX
+            // Obtener la tabla de símbolos y las listas de errores/advertencias del Listener
+            TablaSimbolos tablaSimbolos = listener.getTablaSimbolos();
+            List<String> erroresSemanticos = listener.getErrores();
+            List<String> advertencias = listener.getWarnings();
 
-            // 3. Imprimir tabla de símbolos:
-            visitor.getTablaSimbolos().imprimir();
+            // 5. ANÁLISIS SEMÁNTICO
+            // FASE 2: Verificaciones de Flujo de Control y Evaluación de Expresiones (Visitor)
+            // Se le pasa la misma tabla de símbolos y listas de errores/advertencias
+            System.out.println("\n=== ANÁLISIS SEMÁNTICO (Fase 2: Visitor) ===");
+            Caminante visitor = new Caminante(tablaSimbolos, erroresSemanticos, advertencias);
+            visitor.visit(tree); // Recorre el árbol con el Visitor para verificaciones adicionales
 
-            // 4. Imprimir errores y advertencias que guardes en Caminante (si tienes):
-            List<String> erroresSemanticos = visitor.getErrores();
+            // 6. Reportar Errores y Advertencias
             if (!erroresSemanticos.isEmpty()) {
                 System.out.println("\n=== ERRORES SEMÁNTICOS ===");
                 erroresSemanticos.forEach(System.out::println);
             } else {
-                System.out.println("\n✅ Análisis semántico completado sin errores.");
+                System.out.println("\n✅ Análisis semántico completado sin errores detectados.");
             }
 
-            List<String> advertencias = visitor.getWarnings();
-            if (!advertencias.isEmpty()) {
-                System.out.println("\n=== ADVERTENCIAS ===");
-                advertencias.forEach(System.out::println);
+            // 7. Verificación final de variables/funciones no usadas
+            // Esto se hace después de que ambos pases (Listener y Visitor) hayan marcado los símbolos.
+            System.out.println("\n=== ADVERTENCIAS FINALES ===");
+            boolean tieneAdvertenciasFinales = false;
+            for (TablaSimbolos.Simbolo simbolo : tablaSimbolos.getTodosSimbolos()) {
+                if (simbolo.getCategoria().equals("variable") && !simbolo.isUsada()) {
+                    advertencias.add("Advertencia en línea " + simbolo.getLinea() +
+                            ": Variable '" + simbolo.getNombre() + "' declarada pero no usada.");
+                    tieneAdvertenciasFinales = true;
+                }
+                if (simbolo.getCategoria().equals("funcion") && !simbolo.isUsada() && !simbolo.getNombre().equals("main")) {
+                    advertencias.add("Advertencia en línea " + simbolo.getLinea() +
+                            ": Función '" + simbolo.getNombre() + "' declarada pero no llamada.");
+                    tieneAdvertenciasFinales = true;
+                }
             }
+
+            if (!advertencias.isEmpty()) { // Imprimir todas las advertencias recolectadas
+                advertencias.forEach(System.out::println);
+            } else {
+                System.out.println("✅ No se detectaron advertencias.");
+            }
+
+            // 8. Imprimir la Tabla de Símbolos final
+            tablaSimbolos.imprimir();
 
         } catch (IOException e) {
             System.err.println("❌ Error al leer el archivo: " + e.getMessage());
         } catch (ParseCancellationException e) {
-            System.err.println("❌ Error de análisis: " + e.getMessage());
+            System.err.println("❌ Error de análisis (Léxico/Sintáctico): " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("❌ Error inesperado:");
+            System.err.println("❌ Error inesperado durante la compilación:");
             e.printStackTrace();
         }
     }
@@ -150,7 +159,6 @@ public class App {
             frame.add(scrollPane);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setSize(800, 600);
-//            frame.setVisible(true);
             viewer.open();  // Esto lanza una ventana gráfica con el árbol de análisis
 
         } catch (Exception e) {

@@ -1,0 +1,143 @@
+
+// ===================================
+// Advertencias No Críticas
+// ===================================
+
+// ADVERTENCIA: Variable 'unusedGlobalVar' declarada pero no usada.
+int unusedGlobalVar = 10;
+
+// ADVERTENCIA: Función 'neverCalledFunction' declarada pero nunca llamada.
+void neverCalledFunction() {
+    int localUnused = 0; // ADVERTENCIA: Variable 'localUnused' declarada pero no usada.
+}
+
+// ADVERTENCIA: Parámetro 'unusedParam' no utilizado.
+int functionWithUnusedParam(int usedParam, int unusedParam) {
+    return usedParam * 2;
+}
+
+// ADVERTENCIA: Bucle infinito detectado (condición constante verdadera).
+// ADVERTENCIA: Variable 'loopVar' declarada pero no usada dentro del bucle.
+while (true) {
+    int loopVar = 1;
+    // Esto es un bucle infinito por diseño para probar la advertencia.
+}
+
+
+
+// ===================================
+// Errores Críticos (Declaración/Ámbito)
+// ===================================
+
+// ERROR: Declarar 2 veces una variable 'duplicateVar' con diferente tipo de datos.
+int duplicateVar = 10;
+double duplicateVar = 20.5; // <-- Este debería ser un ERROR
+
+// ERROR: Declarar 2 veces una función 'duplicateFunc' (redifinición).
+int duplicateFunc() { return 1; }
+char duplicateFunc() { return 'a'; } // <-- Este debería ser un ERROR
+
+// Error: Referenciar a una variable 'undeclaredVar' no definida en el ámbito.
+int resultUndeclaredVar = undeclaredVar + 5; // <-- ERROR: 'undeclaredVar' no declarada
+
+// Error: Referenciar a una función 'undeclaredFunc' no definida en el ámbito.
+int funcResult = undeclaredFunc(); // <-- ERROR: 'undeclaredFunc' no declarada
+
+// ===================================
+// Errores Críticos (Asignación/Tipos)
+// ===================================
+
+int x;
+char y;
+bool z;
+double d;
+
+// ERROR: Asignación de tipo diferente (int = "Hola").
+x = "Hola"; // <-- ERROR: Tipo incompatible (string a int) - Asumiendo que "Hola" es un STRING_LITERAL
+// Si tu analizador léxico no tiene STRING_LITERAL y trata "Hola" como ID, entonces:
+// ERROR: Asignación de tipo diferente (int = ID/char).
+// x = 'A'; // Si tu compilador no permite char a int implícitamente
+
+// ERROR: Asignación de tipo diferente (double = char).
+d = 'X'; // <-- ERROR: Tipo incompatible (char a double) si no hay conversión implícita
+
+// ERROR: Asignación de tipo diferente (bool = int).
+z = 10; // <-- ERROR: Tipo incompatible (int a bool)
+
+// ERROR: Asignar valor a una variable no definida.
+undefinedAssign = 100; // <-- ERROR: 'undefinedAssign' no declarada.
+
+// ===================================
+// Errores Críticos (Funciones/Parámetros/Retorno)
+// ===================================
+
+// Función con parámetros para probar errores
+int add(int num1, int num2) {
+    return num1 + num2;
+}
+
+// ERROR: Pasar parámetros no esperados (demasiados).
+int sumResult1 = add(1, 2, 3); // <-- ERROR: Demasiados argumentos para 'add'
+
+// ERROR: Pasar parámetros no esperados (faltan).
+int sumResult2 = add(1);      // <-- ERROR: Faltan argumentos para 'add'
+
+// ERROR: Pasar parámetros no esperados (tipo incorrecto).
+int sumResult3 = add(1, 'b'); // <-- ERROR: Tipo de argumento incompatible para 'add' (char en lugar de int)
+
+// Función con retorno incorrecto
+char getChar() {
+    return 123; // <-- ERROR: Retornando int en función que espera char
+}
+
+// Función que devuelve int pero no tiene return (si tu lenguaje lo exige).
+int functionWithoutReturn() {
+    int temp = 0;
+    // <-- ERROR: Función 'functionWithoutReturn' con tipo de retorno 'int' debe tener al menos una sentencia return.
+}
+
+
+// ===================================
+// Bloque de Constantes (si aplica)
+// ===================================
+
+
+// ERROR: Reasignar valor de const.
+PI = 4; // <-- ERROR: No se puede reasignar a una constante 'PI'
+
+// ===================================
+// Bloque de Orden de Declaración (si aplica)
+// ===================================
+
+// ERROR: Llamar a una función que está declarada más abajo (si el lenguaje no soporta forward declarations/prototipos).
+int resultFromLater = laterFunction(5); // <-- ERROR: 'laterFunction' no declarada en este ámbito/punto.
+
+int laterFunction(int val) {
+    return val * 2;
+}
+
+
+// ===================================
+// Función principal (main) - para probar advertencias y retorno
+// ===================================
+
+int main() {
+    int m = 5; // ADVERTENCIA: Variable 'm' declarada pero no usada (si no se usa en este main)
+    int n = 10;
+
+    // Llamadas a funciones para evitar que se reporten como "no usadas"
+    functionWithUnusedParam(m, n); // Esta llama a una función con un parámetro no usado, esperando advertencia
+    add(1, 2); // Llamada válida
+    getChar(); // Llamada a función con retorno incorrecto, esperando error
+
+    // Llamada a función que no tiene return
+    functionWithoutReturn();
+
+    // Intentar inicializar una variable sin usarla (si no se detectó arriba)
+    int uninitializedButDeclared; // ADVERTENCIA: Variable 'uninitializedButDeclared' declarada pero no inicializada.
+    // O si es un error crítico: ERROR: Variable 'uninitializedButDeclared' usada antes de ser inicializada.
+    // Esto depende de si tu compilador rastrea la inicialización para el uso.
+
+    // ERROR: Este main no tiene un 'return' explícito para disparar el error semántico de "main sin retorno".
+    // int someCalculation = m + n; // Esto se usa, para evitar advertencia de 'm' y 'n' no usados
+}

@@ -1,5 +1,6 @@
 com/compilador/CompiladorParser$ArgumentosContext.class
 com/compilador/CompiladorParser$ExpCaracterContext.class
+com/compilador/CompiladorParser$SentenciaLlamadaFuncionContext.class
 com/compilador/CompiladorParser$ExpresionContext.class
 com/compilador/CompiladorParser$ExpVariableContext.class
 com/compilador/CompiladorBaseListener.class
@@ -18,12 +19,15 @@ com/compilador/App$1.class
 com/compilador/CompiladorBaseVisitor.class
 com/compilador/TablaSimbolos$Simbolo.class
 com/compilador/CompiladorParser$OperadorBinarioContext.class
+com/compilador/CompiladorParser$DeclaracionVariableInternaForContext.class
 com/compilador/CompiladorParser$ExpBinariaContext.class
 com/compilador/CompiladorParser$ParametrosContext.class
 com/compilador/CompiladorVisitor.class
 com/compilador/TablaSimbolos.class
 com/compilador/CompiladorParser$ExpFalseContext.class
+com/compilador/CompiladorParser$ExpresionNoPuntoComaContext.class
 com/compilador/CompiladorParser$DeclaracionFuncionContext.class
+com/compilador/CompiladorParser$SentenciaAnidadasContext.class
 com/compilador/CompiladorParser$SentenciaContext.class
 com/compilador/CompiladorParser$ExpNegacionContext.class
 com/compilador/CompiladorParser$SentenciaForContext.class
@@ -37,6 +41,7 @@ com/compilador/CompiladorParser$ExpFuncionContext.class
 com/compilador/CompiladorParser$ExpParentizadaContext.class
 com/compilador/CompiladorParser$ProgramaContext.class
 com/compilador/CompiladorParser$AsignacionContext.class
+com/compilador/CompiladorParser$ExpCadenaContext.class
 com/compilador/App.class
 com/compilador/CompiladorParser$SentenciaIfContext.class
 com/compilador/CompiladorListener.class

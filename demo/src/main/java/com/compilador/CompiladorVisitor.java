@@ -23,6 +23,12 @@ public interface CompiladorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitSentencia(CompiladorParser.SentenciaContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link CompiladorParser#sentenciaAnidadas}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSentenciaAnidadas(CompiladorParser.SentenciaAnidadasContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link CompiladorParser#sentenciaIf}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -41,6 +47,18 @@ public interface CompiladorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitSentenciaFor(CompiladorParser.SentenciaForContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link CompiladorParser#declaracionVariableInternaFor}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDeclaracionVariableInternaFor(CompiladorParser.DeclaracionVariableInternaForContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link CompiladorParser#expresionNoPuntoComa}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExpresionNoPuntoComa(CompiladorParser.ExpresionNoPuntoComaContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link CompiladorParser#sentenciaBreak}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -52,6 +70,12 @@ public interface CompiladorVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitSentenciaContinue(CompiladorParser.SentenciaContinueContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link CompiladorParser#sentenciaLlamadaFuncion}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSentenciaLlamadaFuncion(CompiladorParser.SentenciaLlamadaFuncionContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link CompiladorParser#bloque}.
 	 * @param ctx the parse tree
@@ -156,6 +180,13 @@ public interface CompiladorVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitExpVariable(CompiladorParser.ExpVariableContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code expCadena}
+	 * labeled alternative in {@link CompiladorParser#expresion}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExpCadena(CompiladorParser.ExpCadenaContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code expFuncion}
 	 * labeled alternative in {@link CompiladorParser#expresion}.

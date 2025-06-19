@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack; // ¡Nuevo import!
 import java.util.stream.Collectors;
 
 /**
@@ -14,14 +15,20 @@ public class SimbolosListener extends CompiladorBaseListener {
     private TablaSimbolos tablaSimbolos;
     private List<String> warnings;
     private List<String> errores;
-    private String tipoRetornoActual; // Para verificar return
+    private String tipoRetornoActual; // Para verificar return dentro de funciones
 
+    // NUEVO: Pila para gestionar los ámbitos
+    private Stack<String> ambitoStack;
+    private int bloqueAnonimoCounter; // Para dar nombres únicos a los bloques anónimos
 
     public SimbolosListener() {
         this.tablaSimbolos = new TablaSimbolos();
         this.warnings = new ArrayList<>();
         this.errores = new ArrayList<>();
         this.tipoRetornoActual = null;
+        this.ambitoStack = new Stack<>();
+        this.bloqueAnonimoCounter = 0;
+        ambitoStack.push("global"); // El ámbito global es el primero
     }
 
     /**
@@ -47,52 +54,52 @@ public class SimbolosListener extends CompiladorBaseListener {
      */
     @Override
     public void enterDeclaracionFuncion(CompiladorParser.DeclaracionFuncionContext ctx) {
-        // Obtener información de la función
         String nombre = ctx.ID().getText();
         String tipo = ctx.tipo().getText();
         int linea = ctx.ID().getSymbol().getLine();
         int columna = ctx.ID().getSymbol().getCharPositionInLine();
 
-        // Crear símbolo para la función
-        TablaSimbolos.Simbolo simbolo = new TablaSimbolos.Simbolo(
+        // Crear símbolo para la función en el ámbito global
+        TablaSimbolos.Simbolo funcionSimbolo = new TablaSimbolos.Simbolo(
                 nombre, tipo, "funcion", linea, columna, "global"
         );
+        // Si el nombre de la función ya existe en global, reportar error
+        if (!tablaSimbolos.agregar(funcionSimbolo)) {
+            errores.add("Error semántico en línea " + linea +
+                    ": Función '" + nombre + "' ya declarada en el ámbito global.");
+        }
 
-        // Agregar parámetros si existen
+        // Empujar el ámbito de la función a la pila de ámbitos.
+        // Las variables y parámetros dentro de la función pertenecen a este ámbito.
+        ambitoStack.push(nombre);
+
+        // Manejo de parámetros: agrégalos al símbolo de la función y a la tabla de símbolos
         if (ctx.parametros() != null) {
             for (CompiladorParser.ParametroContext paramCtx : ctx.parametros().parametro()) {
                 String tipoParam = paramCtx.tipo().getText();
                 String nombreParam = paramCtx.ID().getText();
+                int paramLinea = paramCtx.ID().getSymbol().getLine();
+                int paramColumna = paramCtx.ID().getSymbol().getCharPositionInLine();
 
-                // Agregar tipo de parámetro a la función
-                simbolo.addParametro(tipoParam);
+                // Añadir el tipo del parámetro a la lista de parámetros de la función
+                funcionSimbolo.addParametro(tipoParam);
 
-                // Crear símbolo para el parámetro
+                // Crear símbolo para el parámetro EN EL ÁMBITO DE LA FUNCIÓN
                 TablaSimbolos.Simbolo paramSimbolo = new TablaSimbolos.Simbolo(
                         nombreParam, tipoParam, "parametro",
-                        paramCtx.ID().getSymbol().getLine(),
-                        paramCtx.ID().getSymbol().getCharPositionInLine(),
-                        nombre  // El ámbito del parámetro es el nombre de la función
+                        paramLinea, paramColumna, ambitoStack.peek() // El ámbito del parámetro es el de la función
                 );
+                // Los parámetros se consideran inicializados por definición
+                paramSimbolo.setInicializada(true);
 
-                // Agregar el parámetro a la tabla de símbolos
                 if (!tablaSimbolos.agregar(paramSimbolo)) {
-                    errores.add("Error semántico en línea " + paramCtx.ID().getSymbol().getLine() +
-                            ": Parámetro duplicado '" + nombreParam + "'");
+                    errores.add("Error semántico en línea " + paramLinea +
+                            ": Parámetro duplicado '" + nombreParam + "' en la función '" + nombre + "'.");
                 }
             }
         }
 
-        // Agregar la función a la tabla de símbolos
-        if (!tablaSimbolos.agregar(simbolo)) {
-            errores.add("Error semántico en línea " + linea +
-                    ": Función '" + nombre + "' ya declarada");
-        }
-
-        // Cambiar el ámbito actual
-        tablaSimbolos.setAmbito(nombre);
-
-        // Guardar el tipo de retorno para verificar las sentencias return
+        // Guardar el tipo de retorno para verificar las sentencias `return`
         tipoRetornoActual = tipo;
     }
 
@@ -101,31 +108,48 @@ public class SimbolosListener extends CompiladorBaseListener {
      */
     @Override
     public void exitDeclaracionFuncion(CompiladorParser.DeclaracionFuncionContext ctx) {
-        // Verificar si la función no void tiene al menos un return
-        String tipo = ctx.tipo().getText();
-        String nombre = ctx.ID().getText();
+        // Verificar si la función no `void` tiene al menos un `return`
+        String tipoFuncion = ctx.tipo().getText();
+        String nombreFuncion = ctx.ID().getText();
 
-        if (!tipo.equals("void")) {
-            // Podríamos hacer un análisis más profundo para garantizar que todos los caminos tienen return
-            // pero eso requeriría un análisis de flujo de control más complejo
+        if (!tipoFuncion.equals("void")) {
+            // Aquí solo se verifica si existe *algún* retorno en el bloque.
             boolean tieneReturn = false;
-
-            for (int i = 0; i < ctx.bloque().sentencia().size(); i++) {
-                if (ctx.bloque().sentencia(i).retorno() != null) {
-                    tieneReturn = true;
-                    break;
+            if (ctx.bloque() != null) {
+                for (CompiladorParser.SentenciaAnidadasContext sentenciaAnidadasContext : ctx.bloque().sentenciaAnidadas()) {
+                    if (sentenciaAnidadasContext.retorno() != null) {
+                        tieneReturn = true;
+                        break;
+                    }
                 }
             }
-
             if (!tieneReturn) {
-                errores.add("Error semántico en función '" + nombre + "': Función con tipo de retorno '" +
-                        tipo + "' debe tener al menos una sentencia return");
+                errores.add("Error semántico en función '" + nombreFuncion + "' (línea " + ctx.ID().getSymbol().getLine() +
+                        "): Función con tipo de retorno '" + tipoFuncion + "' debe tener al menos una sentencia return.");
             }
         }
 
-        // Restaurar el ámbito global y el tipo de retorno
-        tablaSimbolos.setAmbito("global");
-        tipoRetornoActual = null;
+        // Desapilar el ámbito de la función al salir
+        ambitoStack.pop();
+        tipoRetornoActual = null; // Resetear el tipo de retorno actual
+    }
+
+    /**
+     * Cuando se encuentra un bloque de código (por ejemplo, `if`, `while`, o bloques anidados)
+     */
+    @Override
+    public void enterBloque(CompiladorParser.BloqueContext ctx) {
+        // Empujar un nuevo ámbito para el bloque. Útil para variables declaradas dentro de `if`/`while`.
+        ambitoStack.push("bloque_" + bloqueAnonimoCounter++);
+    }
+
+    /**
+     * Al salir de un bloque de código
+     */
+    @Override
+    public void exitBloque(CompiladorParser.BloqueContext ctx) {
+        // Desapilar el ámbito del bloque
+        ambitoStack.pop();
     }
 
     /**
@@ -138,14 +162,21 @@ public class SimbolosListener extends CompiladorBaseListener {
         int linea = ctx.ID().getSymbol().getLine();
         int columna = ctx.ID().getSymbol().getCharPositionInLine();
 
+        // El ámbito de la variable es el tope de la pila de ámbitos
+        String ambitoDeDeclaracion = ambitoStack.peek();
+
         // Crear y agregar el símbolo
         TablaSimbolos.Simbolo simbolo = new TablaSimbolos.Simbolo(
-                nombre, tipo, "variable", linea, columna, tablaSimbolos.getAmbito()
+                nombre, tipo, "variable", linea, columna, ambitoDeDeclaracion
         );
+        // Marcar como inicializada si tiene una expresión de asignación
+        if (ctx.expresion() != null) {
+            simbolo.setInicializada(true);
+        }
 
         if (!tablaSimbolos.agregar(simbolo)) {
             errores.add("Error semántico en línea " + linea +
-                    ": Variable '" + nombre + "' ya declarada en este ámbito");
+                    ": Variable '" + nombre + "' ya declarada en el ámbito '" + ambitoDeDeclaracion + "'.");
         }
     }
 
@@ -157,42 +188,52 @@ public class SimbolosListener extends CompiladorBaseListener {
         String nombre = ctx.ID().getText();
         int linea = ctx.ID().getSymbol().getLine();
 
-        // Verificar si la variable existe
-        TablaSimbolos.Simbolo simbolo = tablaSimbolos.buscar(nombre);
+        // Buscar la variable en la pila de ámbitos
+        TablaSimbolos.Simbolo simbolo = tablaSimbolos.buscar(nombre, ambitoStack);
         if (simbolo == null) {
-            errores.add("Error semántico en línea " + linea + ": Variable '" + nombre + "' no declarada");
+            errores.add("Error semántico en línea " + linea + ": Variable '" + nombre + "' no declarada.");
             return;
         }
 
         // Verificar que sea una variable o parámetro (no una función)
         if (!simbolo.getCategoria().equals("variable") && !simbolo.getCategoria().equals("parametro")) {
-            errores.add("Error semántico en línea " + linea + ": No se puede asignar valor a '" + nombre + "' porque no es una variable");
+            errores.add("Error semántico en línea " + linea + ": No se puede asignar valor a '" + nombre + "' porque no es una variable/parámetro.");
             return;
         }
 
-        // Obtener el tipo de la expresión asignada
+        // Marcar la variable como inicializada después de una asignación
+        simbolo.setInicializada(true);
+        simbolo.setUsada(true); // Una asignación también es un uso
+
+        // Obtener el tipo de la expresión asignada (usando el mismo método de tipo)
         String tipoExpresion = getTipoExpresion(ctx.expresion());
         String tipoVariable = simbolo.getTipo();
 
         if (tipoExpresion.equals("void")) {
-            errores.add("Error semántico en línea " + linea + ": No se puede asignar una expresión de tipo void");
+            errores.add("Error semántico en línea " + linea + ": No se puede asignar una expresión de tipo 'void'.");
             return;
         }
 
         // Verificar compatibilidad de tipos
-        if (!esTipoCompatble(tipoVariable, tipoExpresion, linea)) {
-            errores.add("Error semántico en línea " + linea + ": No se puede asignar '" + tipoExpresion + "' a '" + tipoVariable + "'");
+        if (!esTipoCompatibleAsignacion(tipoVariable, tipoExpresion, linea)) {
+            errores.add("Error semántico en línea " + linea + ": No se puede asignar '" + tipoExpresion + "' a '" + tipoVariable + "'.");
         }
-
     }
 
-    private boolean esTipoCompatble(String tipoVariable, String tipoExpresion, int linea) {
+    /**
+     * Función auxiliar para verificar compatibilidad de tipos en asignaciones.
+     * @param tipoVariable Tipo de la variable a la que se asigna.
+     * @param tipoExpresion Tipo de la expresión que se asigna.
+     * @param linea Número de línea para advertencias.
+     * @return true si los tipos son compatibles, false en caso contrario.
+     */
+    private boolean esTipoCompatibleAsignacion(String tipoVariable, String tipoExpresion, int linea) {
         // Caso 1: Tipos iguales → siempre válido
         if (tipoVariable.equals(tipoExpresion)) {
             return true;
         }
 
-        // Caso 2: Asignación numérica (ej: int → double, char → int)
+        // Caso 2: Conversiones implícitas ascendentes ( widening conversions )
         if (tipoVariable.equals("double") && (tipoExpresion.equals("int") || tipoExpresion.equals("char"))) {
             return true;
         }
@@ -200,27 +241,38 @@ public class SimbolosListener extends CompiladorBaseListener {
             return true;
         }
 
-        // Warning: asignar double a int (posible pérdida de datos)
+        // Caso 3: Conversiones implícitas descendentes ( narrowing conversions ) con advertencia
         if (tipoVariable.equals("int") && tipoExpresion.equals("double")) {
-            warnings.add("Advertencia en línea " + linea + ": posible pérdida de datos asignando 'double' a 'int'");
-            return true; // Permitís la asignación con warning
+            warnings.add("Advertencia en línea " + linea + ": posible pérdida de datos al asignar 'double' a 'int'.");
+            return true; // Permitimos la asignación con advertencia
         }
+        // Puedes agregar más casos aquí si tu lenguaje lo permite (e.g., double a char, int a char)
 
         return false;
     }
 
+
     /**
-     * Cuando se encuentra una expresión de variable
+     * Cuando se encuentra una expresión de variable (uso de una variable)
      */
     @Override
     public void enterExpVariable(CompiladorParser.ExpVariableContext ctx) {
         String nombre = ctx.ID().getText();
         int linea = ctx.ID().getSymbol().getLine();
 
-        TablaSimbolos.Simbolo simbolo = tablaSimbolos.buscar(nombre);
+        // Buscar la variable usando la pila de ámbitos
+        TablaSimbolos.Simbolo simbolo = tablaSimbolos.buscar(nombre, ambitoStack);
+
         if (simbolo == null) {
             errores.add("Error semántico en línea " + linea +
-                    ": Identificador '" + nombre + "' no declarado");
+                    ": Identificador '" + nombre + "' no declarado.");
+        } else {
+            simbolo.setUsada(true); // Marcar como usada
+
+            // Advertencia si se usa sin inicializar (solo si es una variable)
+            if (simbolo.getCategoria().equals("variable") && !simbolo.isInicializada()) {
+                warnings.add("Advertencia en línea " + linea + ": Variable '" + nombre + "' utilizada sin estar inicializada.");
+            }
         }
     }
 
@@ -232,76 +284,97 @@ public class SimbolosListener extends CompiladorBaseListener {
         String nombre = ctx.ID().getText();
         int linea = ctx.ID().getSymbol().getLine();
 
-        // Verificar si la función existe
-        TablaSimbolos.Simbolo simbolo = tablaSimbolos.buscar(nombre);
-        if (simbolo == null) {
+        // Las funciones se declaran en el ámbito global. Búsqueda directa.
+        TablaSimbolos.Simbolo simboloFuncion = tablaSimbolos.buscarEnAmbitoDirecto(nombre, "global");
+
+        if (simboloFuncion == null) {
             errores.add("Error semántico en línea " + linea +
-                    ": Función '" + nombre + "' no declarada");
+                    ": Función '" + nombre + "' no declarada.");
             return;
         }
 
-        // Verificar que sea una función
-        if (!simbolo.getCategoria().equals("funcion")) {
+        // Verificar que el símbolo encontrado sea realmente una función
+        if (!simboloFuncion.getCategoria().equals("funcion")) {
             errores.add("Error semántico en línea " + linea +
-                    ": '" + nombre + "' no es una función");
+                    ": '" + nombre + "' no es una función.");
             return;
         }
 
-        // Verificar número de argumentos
-        int numArgumentosEsperados = simbolo.getParametros().size();
-        int numArgumentosRecibidos = ctx.argumentos() == null ? 0 : ctx.argumentos().expresion().size();
+        // Marcar la función como usada
+        simboloFuncion.setUsada(true);
 
-        if (numArgumentosEsperados != numArgumentosRecibidos) {
-            errores.add("Error semántico en línea " + linea +
-                    ": Función '" + nombre + "' espera " + numArgumentosEsperados +
-                    " argumentos, pero recibió " + numArgumentosRecibidos);
+        // Obtener los tipos de los argumentos pasados en la llamada
+        List<String> tiposArgumentosRecibidos = new ArrayList<>();
+        if (ctx.argumentos() != null) {
+            for (CompiladorParser.ExpresionContext exprCtx : ctx.argumentos().expresion()) {
+                tiposArgumentosRecibidos.add(getTipoExpresion(exprCtx)); // Obtener el tipo de cada argumento
+            }
         }
-        // Para una verificación completa de tipos, necesitaríamos determinar el tipo de cada expresión
+
+        // Verificar el número y tipo de argumentos usando el método de TablaSimbolos
+        if (!tablaSimbolos.verificarParametros(nombre, tiposArgumentosRecibidos)) {
+            errores.add("Error semántico en línea " + linea +
+                    ": La llamada a la función '" + nombre + "' no coincide con la declaración esperada.");
+        }
     }
 
     /**
-     * Cuando se encuentra una sentencia return
+     * Cuando se encuentra una sentencia `return`
      */
     @Override
     public void enterRetorno(CompiladorParser.RetornoContext ctx) {
+        int linea = ctx.getStart().getLine();
+
         if (tipoRetornoActual == null) {
-            errores.add("Error semántico en línea " + ctx.getStart().getLine() +
-                    ": Sentencia return fuera de una función");
+            errores.add("Error semántico en línea " + linea +
+                    ": Sentencia 'return' fuera de una función.");
             return;
         }
+
+        String tipoRetornadoPorExpresion = ctx.expresion() != null ? getTipoExpresion(ctx.expresion()) : "void";
 
         // Verificar compatibilidad del tipo de retorno
         if (tipoRetornoActual.equals("void")) {
             if (ctx.expresion() != null) {
-                errores.add("Error semántico en línea " + ctx.getStart().getLine() +
-                        ": Función void no debe retornar un valor");
+                errores.add("Error semántico en línea " + linea +
+                        ": Función 'void' no debe retornar un valor.");
             }
         } else {
             if (ctx.expresion() == null) {
-                errores.add("Error semántico en línea " + ctx.getStart().getLine() +
+                errores.add("Error semántico en línea " + linea +
                         ": Función con tipo de retorno '" + tipoRetornoActual +
-                        "' debe retornar un valor");
+                        "' debe retornar un valor.");
+            } else if (!esTipoCompatibleAsignacion(tipoRetornoActual, tipoRetornadoPorExpresion, linea)) {
+                // Reutilizamos esTipoCompatibleAsignacion para la compatibilidad de retorno
+                errores.add("Error semántico en línea " + linea +
+                        ": El tipo de retorno esperado '" + tipoRetornoActual +
+                        "' no es compatible con el tipo retornado '" + tipoRetornadoPorExpresion + "'.");
             }
-            // Una verificación completa requeriría determinar el tipo de la expresión
         }
     }
 
     /**
-     * Al encontrar un nodo de error en el árbol de análisis sintáctico
+     * Al encontrar un nodo de error en el árbol de análisis sintáctico.
+     * Estos errores ya deberían ser capturados por el parser y no deberían llegar aquí si todo va bien.
      */
     @Override
     public void visitErrorNode(ErrorNode node) {
-        errores.add("Error sintáctico en token: " + node.getText());
+        // Normalmente, los errores sintácticos se capturan en la fase de parsing.
+        // Si llegan aquí, indica un problema en la configuración del ErrorListener del parser.
+        errores.add("Error sintáctico en línea " + node.getSymbol().getLine() +
+                ": Token inesperado o inválido: '" + node.getText() + "'");
     }
 
     /**
-     * Método para determinar el tipo de una expresión (implementación básica)
-     * Una implementación completa requeriría más lógica para evaluar expresiones complejas
+     * Método auxiliar para determinar el tipo de una expresión.
+     * ¡IMPORTANTE!: Este método solo DETERMINA EL TIPO, no modifica la tabla de símbolos (no marca como usada/inicializada).
+     * Es crucial que las marcas de uso/inicialización se hagan en `enterExpVariable` etc.
      */
     private String getTipoExpresion(CompiladorParser.ExpresionContext ctx) {
         if (ctx instanceof CompiladorParser.ExpVariableContext) {
             CompiladorParser.ExpVariableContext expVar = (CompiladorParser.ExpVariableContext) ctx;
-            TablaSimbolos.Simbolo simbolo = tablaSimbolos.buscar(expVar.ID().getText());
+            // No llamar a simbolo.setUsada(true) aquí; se hace en enterExpVariable
+            TablaSimbolos.Simbolo simbolo = tablaSimbolos.buscar(expVar.ID().getText(), ambitoStack);
             return simbolo != null ? simbolo.getTipo() : "desconocido";
 
         } else if (ctx instanceof CompiladorParser.ExpEnteroContext) {
@@ -313,28 +386,26 @@ public class SimbolosListener extends CompiladorBaseListener {
         } else if (ctx instanceof CompiladorParser.ExpCaracterContext) {
             return "char";
 
+        } else if (ctx instanceof CompiladorParser.ExpTrueContext || ctx instanceof CompiladorParser.ExpFalseContext) {
+            // Si no tienes tipo 'boolean', puedes mapearlo a 'int' (0 para false, 1 para true)
+            return "int"; // O el tipo que uses para booleanos
+
         } else if (ctx instanceof CompiladorParser.ExpFuncionContext) {
             CompiladorParser.ExpFuncionContext expFunc = (CompiladorParser.ExpFuncionContext) ctx;
-            TablaSimbolos.Simbolo simbolo = tablaSimbolos.buscar(expFunc.ID().getText());
-            if (simbolo == null) return "desconocido";
-
-            // Verificación: cantidad de argumentos y sus tipos
-            List<CompiladorParser.ExpresionContext> args = expFunc.argumentos() != null ? expFunc.argumentos().expresion() : new ArrayList<>();
-            List<String> tiposArgs = args.stream().map(this::getTipoExpresion).collect(Collectors.toList());
-
-            if (!tablaSimbolos.verificarParametros(expFunc.ID().getText(), tiposArgs)) {
-                errores.add("Error semántico en línea " + expFunc.ID().getSymbol().getLine() +
-                        ": Los argumentos no coinciden con la declaración de la función '" + expFunc.ID().getText() + "'");
-            }
-
-            return simbolo.getTipo();
+            // No llamar a simbolo.setUsada(true) aquí; se hace en enterExpFuncion
+            TablaSimbolos.Simbolo simbolo = tablaSimbolos.buscarEnAmbitoDirecto(expFunc.ID().getText(), "global");
+            return simbolo != null ? simbolo.getTipo() : "desconocido";
 
         } else if (ctx instanceof CompiladorParser.ExpNegacionContext) {
-            // Suponemos que `!expr` siempre espera un booleano, pero si no hay tipo boolean en tu lenguaje,
-            // podés considerar cualquier tipo numérico como válido.
             CompiladorParser.ExpNegacionContext expNeg = (CompiladorParser.ExpNegacionContext) ctx;
-            String tipo = getTipoExpresion(expNeg.expresion());
-            return tipo;
+            String tipoOperando = getTipoExpresion(expNeg.expresion());
+            // Operador '!' suele aplicarse a booleanos (o ints para 0/1)
+            if (tipoOperando.equals("int")) { // Asumiendo int para booleanos
+                return "int";
+            }
+            errores.add("Error semántico en línea " + expNeg.getStart().getLine() +
+                    ": Operador '!' no aplicable a tipo '" + tipoOperando + "'.");
+            return "desconocido";
 
         } else if (ctx instanceof CompiladorParser.ExpParentizadaContext) {
             CompiladorParser.ExpParentizadaContext expPar = (CompiladorParser.ExpParentizadaContext) ctx;
@@ -345,86 +416,70 @@ public class SimbolosListener extends CompiladorBaseListener {
             String tipoIzq = getTipoExpresion(expBin.expresion(0));
             String tipoDer = getTipoExpresion(expBin.expresion(1));
             String operador = expBin.operadorBinario().getText();
+            int linea = ctx.getStart().getLine();
 
-            // Comparadores y operadores lógicos → booleano (pero como no tenés bool, usamos int para true/false)
-            if (operador.equals(">") || operador.equals(">=") || operador.equals("<") || operador.equals("<=") ||
-                    operador.equals("==") || operador.equals("!=") ||
-                    operador.equals("&&") || operador.equals("||")) {
-                return "int"; // o "bool" si lo definís más adelante
-            }
-
-            // Operadores matemáticos
-            if ((tipoIzq.equals("double") || tipoDer.equals("double"))) {
-                return "double";
-            } else if ((tipoIzq.equals("int") || tipoDer.equals("int"))) {
-                return "int";
-            } else {
+            // Verificar si los operandos son válidos
+            if (tipoIzq.equals("desconocido") || tipoDer.equals("desconocido")) {
+                // Ya se reportó un error, solo propagar el tipo desconocido
                 return "desconocido";
             }
-        }
 
-        return "desconocido";
+            // Lógica para determinar el tipo resultante y verificar compatibilidad
+            switch (operador) {
+                case "+": case "-": case "*": case "/": case "%":
+                    // Operadores aritméticos: permiten combinaciones numéricas
+                    if (!esTipoNumerico(tipoIzq) || !esTipoNumerico(tipoDer)) {
+                        errores.add("Error semántico en línea " + linea +
+                                ": Operador aritmético '" + operador + "' no puede usarse entre " + tipoIzq + " y " + tipoDer + ".");
+                        return "desconocido";
+                    }
+                    // Reglas de promoción de tipos
+                    if (tipoIzq.equals("double") || tipoDer.equals("double")) {
+                        return "double";
+                    }
+                    return "int"; // Si ambos son int o char (char se promueve a int)
+
+                case "&&": case "||":
+                    // Operadores lógicos: requieren tipos booleanos (que mapeamos a int)
+                    if (!tipoIzq.equals("int") || !tipoDer.equals("int")) {
+                        errores.add("Error semántico en línea " + linea +
+                                ": Operador lógico '" + operador + "' requiere tipos enteros (int) para booleanos.");
+                        return "desconocido";
+                    }
+                    return "int"; // El resultado es un booleano (int)
+
+                case ">": case "<": case ">=": case "<=": case "==": case "!=":
+                    // Operadores de comparación: requieren tipos comparables, el resultado es booleano (int)
+                    if (!sonComparables(tipoIzq, tipoDer)) {
+                        errores.add("Error semántico en línea " + linea +
+                                ": No se pueden comparar tipos " + tipoIzq + " y " + tipoDer + " con '" + operador + "'.");
+                        return "desconocido";
+                    }
+                    return "int"; // El resultado es un booleano (int)
+
+                default:
+                    errores.add("Error semántico en línea " + linea + ": Operador binario no soportado '" + operador + "'.");
+                    return "desconocido";
+            }
+        }
+        return "desconocido"; // Para cualquier otro tipo de expresión no manejado
     }
 
-
-    @Override
-    public void enterExpBinaria(CompiladorParser.ExpBinariaContext ctx) {
-        // 1. Obtener los tipos de los operandos izquierdo y derecho
-        String tipoIzq = getTipoExpresion(ctx.expresion(0));
-        String tipoDer = getTipoExpresion(ctx.expresion(1));
-        String operador = ctx.operadorBinario().getText();
-        int linea = ctx.getStart().getLine();
-
-        // 2. Verificar si los operandos son válidos (no "desconocido")
-        if (tipoIzq.equals("desconocido") || tipoDer.equals("desconocido")) {
-            errores.add("Error semántico en línea " + linea + ": Operación con tipo no reconocido");
-            return;
-        }
-
-        // 3. Verificar compatibilidad según el operador
-        switch (operador) {
-            case "+": case "-": case "*": case "/": case "%":
-                // Operadores aritméticos: permiten combinaciones numéricas (int, double, char)
-                if (!esTipoNumerico(tipoIzq) || !esTipoNumerico(tipoDer)) {
-                    errores.add("Error semántico en línea " + linea +
-                            ": Operador '" + operador + "' no puede usarse entre " + tipoIzq + " y " + tipoDer);
-                }
-                break;
-
-            case "&&": case "||":
-                // Operadores lógicos: solo permiten booleanos (en muchos lenguajes) o enteros (como en C)
-                if (!tipoIzq.equals("int") || !tipoDer.equals("int")) {
-                    errores.add("Error semántico en línea " + linea +
-                            ": Operador lógico '" + operador + "' requiere tipos enteros (int)");
-                }
-                break;
-
-            case ">": case "<": case ">=": case "<=": case "==": case "!=":
-                // Operadores de comparación: permiten tipos compatibles pero no mezclar char con double
-                if (!sonComparables(tipoIzq, tipoDer)) {
-                    errores.add("Error semántico en línea " + linea +
-                            ": No se pueden comparar " + tipoIzq + " y " + tipoDer + " con '" + operador + "'");
-                }
-                break;
-
-            default:
-                errores.add("Error semántico en línea " + linea + ": Operador no soportado '" + operador + "'");
-        }
-    }
-
-    // Verifica si un tipo es numérico (int, double, char)
+    // Auxiliar: Verifica si un tipo es numérico (int, double, char)
     private boolean esTipoNumerico(String tipo) {
         return tipo.equals("int") || tipo.equals("double") || tipo.equals("char");
     }
 
-    // Verifica si dos tipos son comparables entre sí
+    // Auxiliar: Verifica si dos tipos son comparables
     private boolean sonComparables(String tipo1, String tipo2) {
-        // Permitir comparaciones entre tipos numéricos, pero no char con double
+        // Permitir comparaciones entre tipos numéricos (int, double, char)
         if (esTipoNumerico(tipo1) && esTipoNumerico(tipo2)) {
+            // Exclusión: no permitir comparación directa entre char y double sin casting explícito
+            // Esto es una regla de diseño, si tu lenguaje los compara, remueve la excepción
             return !(tipo1.equals("char") && tipo2.equals("double")) &&
                     !(tipo1.equals("double") && tipo2.equals("char"));
         }
-        // Comparaciones entre tipos iguales (ej: int == int)
+        // Permitir comparaciones entre tipos idénticos (ej. "void" == "void" si aplica, aunque raro)
         return tipo1.equals(tipo2);
     }
 }
