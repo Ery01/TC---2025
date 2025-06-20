@@ -42,6 +42,7 @@ com/compilador/CompiladorParser$SentenciaForContext.class
 com/compilador/CompiladorParser$ParametroContext.class
 com/compilador/CompiladorParser$ExpDecimalContext.class
 com/compilador/CompiladorParser$ExpEnteroContext.class
+com/compilador/OptimizadorCodigo.class
 com/compilador/CompiladorParser$ExpFuncionContext.class
 com/compilador/CompiladorParser$ExpParentizadaContext.class
 com/compilador/CodigoVisitor.class

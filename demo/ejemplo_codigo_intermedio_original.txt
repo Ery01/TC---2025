@@ -1,0 +1,18 @@
+// Código de tres direcciones generado automáticamente
+// Archivo: ejemplo_codigo_intermedio_original.txt
+// Total de instrucciones: 14
+
+  0: func_main:
+  1: t0 = 10
+  2: x = t0
+  3: t1 = 0
+  4: t2 = x + t1
+  5: y = t2
+  6: t3 = 1
+  7: t4 = y * t3
+  8: z = t4
+  9: t5 = 5
+ 10: t6 = 3
+ 11: t7 = t5 + t6
+ 12: temp_unused = t7
+ 13: end_func_main

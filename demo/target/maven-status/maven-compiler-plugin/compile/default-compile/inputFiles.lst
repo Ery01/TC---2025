@@ -1,6 +1,7 @@
 /Users/jony/TC-Local/TC-Ameri/TP/TecnicaCompilacion/TecnicasDeCompilacion/demo/src/main/java/com/compilador/GeneradorCodigo.java
 /Users/jony/TC-Local/TC-Ameri/TP/TecnicaCompilacion/TecnicasDeCompilacion/demo/src/main/java/com/compilador/SimbolosListener.java
 /Users/jony/TC-Local/TC-Ameri/TP/TecnicaCompilacion/TecnicasDeCompilacion/demo/src/main/java/com/compilador/App.java
+/Users/jony/TC-Local/TC-Ameri/TP/TecnicaCompilacion/TecnicasDeCompilacion/demo/src/main/java/com/compilador/OptimizadorCodigo.java
 /Users/jony/TC-Local/TC-Ameri/TP/TecnicaCompilacion/TecnicasDeCompilacion/demo/src/main/java/com/compilador/CompiladorBaseVisitor.java
 /Users/jony/TC-Local/TC-Ameri/TP/TecnicaCompilacion/TecnicasDeCompilacion/demo/src/main/java/com/compilador/CompiladorLexer.java
 /Users/jony/TC-Local/TC-Ameri/TP/TecnicaCompilacion/TecnicasDeCompilacion/demo/src/main/java/com/compilador/CompiladorParser.java

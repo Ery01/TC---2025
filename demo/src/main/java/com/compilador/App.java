@@ -93,11 +93,11 @@ public class App {
 
             // 3. VISUALIZACIÓN DEL ÁRBOL SINTÁCTICO (Opcional, puede comentar esta línea si no lo necesita)
             // generarImagenArbolSintactico(tree, parser);
-            // System.out.println("   📊 Ventana del árbol sintáctico abierta"); // Removido si se comenta la línea anterior
+            // System.out.println("   📊 Ventana del árbol sintáctico abierta");
 
             // Listas para errores y advertencias semánticas y de código intermedio
             List<String> erroresSemanticos = new ArrayList<>();
-            List<String> warningsGenerales = new ArrayList<>(); // Ahora se usa para warnings de listener, caminante y visitor
+            List<String> warningsGenerales = new ArrayList<>();
 
             // 4. ANÁLISIS SEMÁNTICO (Fase 1: Listener)
             System.out.println("\n=== ANÁLISIS SEMÁNTICO (Fase 1: Listener) ===");
@@ -107,7 +107,7 @@ public class App {
 
             TablaSimbolos tabla = listener.getTablaSimbolos();
             erroresSemanticos.addAll(listener.getErrores());
-            warningsGenerales.addAll(listener.getWarnings()); // Agrega warnings del listener
+            warningsGenerales.addAll(listener.getWarnings());
 
             // Mostrar tabla de símbolos
             System.out.println("\n=== TABLA DE SÍMBOLOS ===");
@@ -115,15 +115,14 @@ public class App {
 
             // 5. ANÁLISIS SEMÁNTICO (Fase 2: Visitor - Caminante)
             System.out.println("\n=== ANÁLISIS SEMÁNTICO (Fase 2: Visitor - Caminante) ===");
-            Caminante caminanteVisitor = new Caminante(tabla, erroresSemanticos, warningsGenerales); // Pasa las mismas listas
+            Caminante caminanteVisitor = new Caminante(tabla, erroresSemanticos, warningsGenerales);
             caminanteVisitor.visit(tree);
-            // Los errores y warnings de Caminante ya se agregan a las listas compartidas
 
             // 6. Reportar Errores y Advertencias Semánticas
             if (!erroresSemanticos.isEmpty()) {
                 System.out.println("\n❌ ERRORES SEMÁNTICOS:");
                 erroresSemanticos.forEach(System.out::println);
-                return; // No continuar si hay errores semánticos
+                return;
             } else {
                 System.out.println("\n✅ Análisis semántico completado sin errores.");
             }
@@ -148,18 +147,13 @@ public class App {
                 System.out.println("\n✅ No se detectaron advertencias.");
             }
 
-            // 8. GENERACIÓN DE CÓDIGO INTERMEDIO
-            System.out.println("\n=== GENERACIÓN DE CÓDIGO INTERMEDIO ===");
-            // Crear el visitor con la tabla de símbolos y las listas de errores/warnings
-            CodigoVisitor visitor = new CodigoVisitor(tabla, erroresSemanticos, warningsGenerales); // Pasa las listas
-
-            // Recorrer el AST para generar código intermedio
+            // 8. GENERACIÓN DE CÓDIGO INTERMEDIO (TAC sin optimizar)
+            System.out.println("\n=== GENERACIÓN DE CÓDIGO INTERMEDIO (Original) ===");
+            CodigoVisitor visitor = new CodigoVisitor(tabla, erroresSemanticos, warningsGenerales);
             visitor.visit(tree);
 
-            // Obtener el generador con el código generado
             GeneradorCodigo generador = visitor.getGenerador();
 
-            // Si hay errores durante la generación de TAC, reportarlos y salir
             if (!erroresSemanticos.isEmpty()) {
                 System.out.println("\n❌ ERRORES DURANTE LA GENERACIÓN DE CÓDIGO INTERMEDIO:");
                 erroresSemanticos.forEach(System.out::println);
@@ -168,25 +162,42 @@ public class App {
                 System.out.println("✅ Generación de Código Intermedio completada sin errores.");
             }
 
-            // Mostrar el código generado en consola
-            System.out.println("\n📝 === CÓDIGO DE TRES DIRECCIONES ===");
+            // Mostrar y guardar el código intermedio ORIGINAL
+            System.out.println("\n📝 === CÓDIGO DE TRES DIRECCIONES (Original) ===");
             generador.imprimirCodigo();
-
-            // Mostrar estadísticas
             generador.imprimirEstadisticas();
 
-            // Guardar código intermedio en archivo
-            String codigoIntermedioPath = baseName + "_codigo_intermedio.txt";
-            guardarCodigoEnArchivo(generador.getCodigo(), codigoIntermedioPath);
-            System.out.println("\n💾 Código intermedio guardado en: " + codigoIntermedioPath);
+            String codigoIntermedioOriginalPath = baseName + "_codigo_intermedio_original.txt";
+            guardarCodigoEnArchivo(generador.getCodigo(), codigoIntermedioOriginalPath);
+            System.out.println("\n💾 Código intermedio original guardado en: " + codigoIntermedioOriginalPath);
 
-            // 9. RESUMEN FINAL
+            // 9. OPTIMIZACIÓN DE CÓDIGO INTERMEDIO
+            System.out.println("\n=== FASE DE OPTIMIZACIÓN DE CÓDIGO INTERMEDIO ===");
+            OptimizadorCodigo optimizador = new OptimizadorCodigo();
+            List<String> tacOriginal = new ArrayList<>(generador.getCodigo()); // Obtener una copia del código original
+            List<String> tacOptimizado = optimizador.optimizar(tacOriginal);
+
+            // Mostrar y guardar el código intermedio OPTIMIZADO
+            System.out.println("\n📝 === CÓDIGO DE TRES DIRECCIONES (Optimizado) ===");
+            for (int i = 0; i < tacOptimizado.size(); i++) {
+                System.out.printf("%3d: %s\n", i, tacOptimizado.get(i));
+            }
+            System.out.println("Total instrucciones optimizadas: " + tacOptimizado.size());
+
+            String codigoIntermedioOptimizadoPath = baseName + "_codigo_intermedio_optimizado.txt";
+            guardarCodigoEnArchivo(tacOptimizado, codigoIntermedioOptimizadoPath);
+            System.out.println("\n💾 Código intermedio optimizado guardado en: " + codigoIntermedioOptimizadoPath);
+
+            // 10. RESUMEN FINAL
             System.out.println("\n=== RESUMEN DE COMPILACIÓN ===");
             System.out.println("Archivo procesado: " + inputFilePath);
             System.out.println("Tokens analizados: " + (tokens.size() - 1));
-            System.out.println("Símbolos en tabla: " + tabla.getTodosSimbolos().size()); // Usar el método size real de TablaSimbolos
-            System.out.println("Instrucciones generadas: " + generador.getCodigo().size());
-            System.out.println("Archivo de salida: " + codigoIntermedioPath);
+            System.out.println("Símbolos en tabla: " + tabla.getTodosSimbolos().size());
+            System.out.println("Instrucciones originales: " + generador.getCodigo().size());
+            System.out.println("Instrucciones optimizadas: " + tacOptimizado.size());
+            System.out.println("Reducción de instrucciones: " + (generador.getCodigo().size() - tacOptimizado.size()));
+            System.out.println("Archivo de salida (original): " + codigoIntermedioOriginalPath);
+            System.out.println("Archivo de salida (optimizado): " + codigoIntermedioOptimizadoPath);
 
             if (erroresLexicos.isEmpty() && erroresSintacticos.isEmpty() && erroresSemanticos.isEmpty()) {
                 System.out.println("\n🎉 ¡COMPILACIÓN EXITOSA! 🎉");
@@ -240,7 +251,6 @@ public class App {
 
             JScrollPane scrollPane = new JScrollPane(panel);
             scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-            // CORREGIDO: "VERTICAL_SCROLLBAR_AS_NEEDED" con 'B' mayúscula en 'ScrollBar'
             scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
             frame.add(scrollPane);
@@ -248,9 +258,9 @@ public class App {
             frame.setSize(1000, 700);
             frame.setLocationRelativeTo(null); // Centrar ventana
 
-            // frame.setVisible(true); // Descomentar si quieres que la ventana del AST no bloquee la ejecución
+            // frame.setVisible(true);
 
-            viewer.open();  // Esto lanza una ventana gráfica con el árbol de análisis
+            viewer.open();
 
         } catch (Exception e) {
             System.err.println("❌ Error al mostrar árbol sintáctico: " + e.getMessage());
