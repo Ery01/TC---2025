@@ -1,18 +1,59 @@
 // Código de tres direcciones generado automáticamente
 // Archivo: ejemplo_codigo_intermedio_original.txt
-// Total de instrucciones: 14
+// Total de instrucciones: 55
 
-  0: func_main:
-  1: t0 = 10
-  2: x = t0
-  3: t1 = 0
-  4: t2 = x + t1
-  5: y = t2
-  6: t3 = 1
-  7: t4 = y * t3
-  8: z = t4
-  9: t5 = 5
- 10: t6 = 3
- 11: t7 = t5 + t6
- 12: temp_unused = t7
- 13: end_func_main
+  0: func_cuadrado:
+  1: t0 = x * x
+  2: return t0
+  3: end_func_cuadrado
+  4: func_main:
+  5: t1 = 2
+  6: c = t1
+  7: d = d
+  8: t2 = 0
+  9: t3 = d + t2
+ 10: d = t3
+ 11: t4 = 1
+ 12: t5 = d + t4
+ 13: d = t5
+ 14: t6 = 5
+ 15: a = t6
+ 16: t7 = 25
+ 17: b = t7
+ 18: t8 = 10
+ 19: t9 = b > t8
+ 20: if !t9 goto L2
+ 21: t10 = 2
+ 22: t11 = b - t10
+ 23: b = t11
+ 24: goto L3
+ 25: L2:
+ 26: t12 = 2
+ 27: t13 = b + t12
+ 28: b = t13
+ 29: L3:
+ 30: t14 = 0
+ 31: sum_of_i_cubed = t14
+ 32: t15 = 0
+ 33: i = t15
+ 34: L6:
+ 35: t16 = 5
+ 36: t17 = i < t16
+ 37: if !t17 goto L7
+ 38: t18 = i * i
+ 39: t19 = t18 * i
+ 40: t20 = sum_of_i_cubed + t19
+ 41: sum_of_i_cubed = t20
+ 42: L8:
+ 43: t21 = 1
+ 44: t22 = i + t21
+ 45: goto L6
+ 46: L7:
+ 47: L10:
+ 48: t23 = true
+ 49: if !t23 goto L11
+ 50: t24 = 1
+ 51: i = t24
+ 52: goto L10
+ 53: L11:
+ 54: end_func_main

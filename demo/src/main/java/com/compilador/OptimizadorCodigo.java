@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Clase para aplicar optimizaciones al código de tres direcciones (TAC).
@@ -13,13 +15,9 @@ import java.util.regex.Pattern;
 public class OptimizadorCodigo {
 
     // Patrones regex para parsear instrucciones TAC
-    // Asignación: VAR = EXPR (ej: a = t0, t0 = 5, t1 = a + b)
     private static final Pattern PATRON_ASIGNACION = Pattern.compile("^(t\\d+|[a-zA-Z_][a-zA-Z0-9_]*) = (.+)$");
-    // Operación binaria: TEMP = OP1 OPERADOR OP2
     private static final Pattern PATRON_OPERACION_BINARIA = Pattern.compile("^(t\\d+) = ([a-zA-Z_][a-zA-Z0-9_]*|t\\d+|\\d+(\\.\\d+)?|\".*\"|'.*'|true|false) ([+\\-*/%<>=!&|]{1,2}) ([a-zA-Z_][a-zA-Z0-9_]*|t\\d+|\\d+(\\.\\d+)?|\".*\"|'.*'|true|false)$");
-    // Operación unaria (negación): TEMP = !OP1
     private static final Pattern PATRON_OPERACION_UNARIA = Pattern.compile("^(t\\d+) = !([a-zA-Z_][a-zA-Z0-9_]*|t\\d+|\\d+(\\.\\d+)?|true|false)$");
-    // Asignación simple (literal): TEMP = LITERAL
     private static final Pattern PATRON_ASIGNACION_LITERAL = Pattern.compile("^(t\\d+|[a-zA-Z_][a-zA-Z0-9_]*) = (\\d+(\\.\\d+)?|\".*\"|'.*'|true|false)$");
 
     public OptimizadorCodigo() {
@@ -32,7 +30,7 @@ public class OptimizadorCodigo {
      * @return La lista de instrucciones TAC optimizadas.
      */
     public List<String> optimizar(List<String> codigoTac) {
-        List<String> codigoOptimizado = new ArrayList<>(codigoTac); // Trabajar sobre una copia
+        List<String> codigoOptimizado = new ArrayList<>(codigoTac);
 
         System.out.println("✨ OPTIMIZADOR: Aplicando optimizaciones...");
 
@@ -60,23 +58,62 @@ public class OptimizadorCodigo {
         System.out.println("  -> Aplicando Propagación/Plegado de Constantes...");
 
         for (String instruccion : codigo) {
-            String instruccionOriginal = instruccion; // Mantener la instrucción original para mensajes
+            String instruccionOriginal = instruccion;
+            String instruccionModificada = instruccion; // La instrucción que vamos a modificar y añadir
 
-            // 1. Reemplazar variables/temporales con sus valores constantes conocidos
-            for (Map.Entry<String, Object> entrada : valoresConstantes.entrySet()) {
-                String nombreVar = entrada.getKey();
-                Object valorVar = entrada.getValue();
-
-                // Reemplazar la variable/temporal con su valor constante
-                // Cuidado: solo reemplazar si es una variable completa, no parte de un ID más largo
-                instruccion = instruccion.replaceAll("\\b" + Pattern.quote(nombreVar) + "\\b", String.valueOf(valorVar));
-            }
-
-            // 2. Intentar parsear y procesar la instrucción
+            // Paso 1: Propagar constantes en el lado derecho de la instrucción.
+            // Declarar los Matchers aquí, al inicio de la iteración del bucle
             Matcher matcherAsignacion = PATRON_ASIGNACION.matcher(instruccion);
             Matcher matcherOperacionBinaria = PATRON_OPERACION_BINARIA.matcher(instruccion);
             Matcher matcherOperacionUnaria = PATRON_OPERACION_UNARIA.matcher(instruccion);
             Matcher matcherAsignacionLiteral = PATRON_ASIGNACION_LITERAL.matcher(instruccion);
+
+            if (matcherAsignacion.matches()) {
+                String lhs = matcherAsignacion.group(1);
+                String rhs = matcherAsignacion.group(2);
+                for (Map.Entry<String, Object> entrada : valoresConstantes.entrySet()) {
+                    String nombreVar = entrada.getKey();
+                    Object valorVar = entrada.getValue();
+                    rhs = rhs.replaceAll("\\b" + Pattern.quote(nombreVar) + "\\b", String.valueOf(valorVar));
+                }
+                instruccionModificada = lhs + " = " + rhs;
+            } else if (matcherOperacionBinaria.matches()) {
+                String lhs = matcherOperacionBinaria.group(1);
+                String op1 = matcherOperacionBinaria.group(2);
+                String op = matcherOperacionBinaria.group(4);
+                String op2 = matcherOperacionBinaria.group(5);
+                for (Map.Entry<String, Object> entrada : valoresConstantes.entrySet()) {
+                    String nombreVar = entrada.getKey();
+                    Object valorVar = entrada.getValue();
+                    op1 = op1.replaceAll("\\b" + Pattern.quote(nombreVar) + "\\b", String.valueOf(valorVar));
+                    op2 = op2.replaceAll("\\b" + Pattern.quote(nombreVar) + "\\b", String.valueOf(valorVar));
+                }
+                instruccionModificada = lhs + " = " + op1 + " " + op + " " + op2;
+            } else if (matcherOperacionUnaria.matches()) {
+                String lhs = matcherOperacionUnaria.group(1);
+                String op1 = matcherOperacionUnaria.group(2);
+                for (Map.Entry<String, Object> entrada : valoresConstantes.entrySet()) {
+                    String nombreVar = entrada.getKey();
+                    Object valorVar = entrada.getValue();
+                    op1 = op1.replaceAll("\\b" + Pattern.quote(nombreVar) + "\\b", String.valueOf(valorVar));
+                }
+                instruccionModificada = lhs + " = !" + op1;
+            } else {
+                // Para otras instrucciones (if, goto, return, push, etc.), propagar en toda la línea.
+                for (Map.Entry<String, Object> entrada : valoresConstantes.entrySet()) {
+                    String nombreVar = entrada.getKey();
+                    Object valorVar = entrada.getValue();
+                    instruccionModificada = instruccionModificada.replaceAll("\\b" + Pattern.quote(nombreVar) + "\\b", String.valueOf(valorVar));
+                }
+            }
+
+
+            // Paso 2: Plegado de constantes y actualización de valores constantes.
+            // Re-evaluar matchers con la `instruccionModificada`
+            matcherOperacionBinaria = PATRON_OPERACION_BINARIA.matcher(instruccionModificada);
+            matcherOperacionUnaria = PATRON_OPERACION_UNARIA.matcher(instruccionModificada);
+            matcherAsignacionLiteral = PATRON_ASIGNACION_LITERAL.matcher(instruccionModificada);
+            matcherAsignacion = PATRON_ASIGNACION.matcher(instruccionModificada);
 
             if (matcherOperacionBinaria.matches()) {
                 String varTemporal = matcherOperacionBinaria.group(1);
@@ -84,7 +121,6 @@ public class OptimizadorCodigo {
                 String operador = matcherOperacionBinaria.group(4);
                 String op2Str = matcherOperacionBinaria.group(5);
 
-                // Intentar plegado de constantes
                 Object op1 = parsearLiteral(op1Str);
                 Object op2 = parsearLiteral(op2Str);
 
@@ -93,20 +129,19 @@ public class OptimizadorCodigo {
                         Object resultado = evaluarOperacionBinaria(op1, operador, op2);
                         if (resultado != null) {
                             String nuevaInstruccionResultado = varTemporal + " = " + resultado;
-                            if (!nuevaInstruccionResultado.equals(instruccion)) {
+                            if (!nuevaInstruccionResultado.equals(instruccionOriginal)) {
                                 System.out.println("    - Plegada: '" + instruccionOriginal + "' a '" + nuevaInstruccionResultado + "'");
                             }
-                            instruccion = nuevaInstruccionResultado;
-                            valoresConstantes.put(varTemporal, resultado); // Actualiza el valor constante para la temporal
+                            instruccionModificada = nuevaInstruccionResultado;
+                            valoresConstantes.put(varTemporal, resultado);
                         }
                     } catch (ArithmeticException e) {
-                        // División por cero en plegado, mantener la instrucción original para que el runtime la maneje
                         System.err.println("  ⚠️ Advertencia de optimización (Plegado): " + e.getMessage() + " en '" + instruccionOriginal + "'");
                     } catch (Exception e) {
-                        // Otros errores de evaluación en plegado, mantener la instrucción original
+                        // Mantener la instrucción original si la evaluación falla
                     }
                 }
-                nuevoCodigo.add(instruccion);
+                nuevoCodigo.add(instruccionModificada);
             } else if (matcherOperacionUnaria.matches()) {
                 String varTemporal = matcherOperacionUnaria.group(1);
                 String opStr = matcherOperacionUnaria.group(2);
@@ -114,20 +149,20 @@ public class OptimizadorCodigo {
 
                 if (op != null) {
                     try {
-                        Object resultado = evaluarOperacionUnaria(op, "!"); // Solo soporta '!' por ahora
+                        Object resultado = evaluarOperacionUnaria(op, "!");
                         if (resultado != null) {
                             String nuevaInstruccionResultado = varTemporal + " = " + resultado;
-                            if (!nuevaInstruccionResultado.equals(instruccion)) {
+                            if (!nuevaInstruccionResultado.equals(instruccionOriginal)) {
                                 System.out.println("    - Plegada (Unaria): '" + instruccionOriginal + "' a '" + nuevaInstruccionResultado + "'");
                             }
-                            instruccion = nuevaInstruccionResultado;
+                            instruccionModificada = nuevaInstruccionResultado;
                             valoresConstantes.put(varTemporal, resultado);
                         }
                     } catch (Exception e) {
-                        // Errores en plegado unario
+                        // Mantener la instrucción original
                     }
                 }
-                nuevoCodigo.add(instruccion);
+                nuevoCodigo.add(instruccionModificada);
             }
             else if (matcherAsignacionLiteral.matches()) {
                 String nombreVar = matcherAsignacionLiteral.group(1);
@@ -135,144 +170,41 @@ public class OptimizadorCodigo {
                 Object valorLiteral = parsearLiteral(valorLiteralStr);
 
                 if (valorLiteral != null) {
-                    valoresConstantes.put(nombreVar, valorLiteral); // Guardar valor constante
+                    valoresConstantes.put(nombreVar, valorLiteral);
                 } else {
                     // Para cadenas y caracteres, simplemente almacenamos el string literal.
                     if (valorLiteralStr.startsWith("\"") || valorLiteralStr.startsWith("'")) {
                         valoresConstantes.put(nombreVar, valorLiteralStr);
                     }
                 }
-                nuevoCodigo.add(instruccion);
+                nuevoCodigo.add(instruccionModificada);
             } else if (matcherAsignacion.matches()) {
                 String nombreVar = matcherAsignacion.group(1);
                 String valorAsignado = matcherAsignacion.group(2);
 
-                // Si el valor asignado es una temporal cuyo valor ya es una constante, propagarla
-                if (valoresConstantes.containsKey(valorAsignado)) {
-                    Object valor = valoresConstantes.get(valorAsignado);
-                    String nuevaInstruccionAsignacion = nombreVar + " = " + valor;
-                    if (!nuevaInstruccionAsignacion.equals(instruccion)) {
+                Object literalAsignado = parsearLiteral(valorAsignado);
+                if (literalAsignado != null) {
+                    valoresConstantes.put(nombreVar, literalAsignado);
+                    instruccionModificada = nombreVar + " = " + literalAsignado; // Actualizar la cadena de instrucción
+                } else if (valoresConstantes.containsKey(valorAsignado)) {
+                    Object val = valoresConstantes.get(valorAsignado);
+                    String nuevaInstruccionAsignacion = nombreVar + " = " + val;
+                    if (!nuevaInstruccionAsignacion.equals(instruccionOriginal)) {
                         System.out.println("    - Propagada: '" + instruccionOriginal + "' a '" + nuevaInstruccionAsignacion + "'");
                     }
-                    instruccion = nuevaInstruccionAsignacion;
-                    valoresConstantes.put(nombreVar, valor); // La variable ahora también es una constante
+                    instruccionModificada = nuevaInstruccionAsignacion;
+                    valoresConstantes.put(nombreVar, val);
                 } else if (valoresConstantes.containsKey(nombreVar)) {
-                    // Si la variable que se está asignando era una constante, pero ahora se le asigna algo no constante,
-                    // dejar de considerarla constante.
+                    // Si la variable era constante, pero ahora se le asigna algo no constante, removerla del mapa.
                     valoresConstantes.remove(nombreVar);
                 }
-                nuevoCodigo.add(instruccion);
+                nuevoCodigo.add(instruccionModificada);
             } else {
-                // Para otras instrucciones (labels, goto, call, return, push), simplemente las añadimos
-                nuevoCodigo.add(instruccion);
-                // Si la instrucción es una llamada a función o un salto, invalida la información de constantes
-                // ya que podría haber efectos secundarios. En una optimización más compleja, esto sería más granular.
-                if (instruccion.matches(".*(call|goto|if !.*|return).*")) {
-                    // En un compilador real, se usaría un análisis más preciso para invalidar constantes afectadas.
-                    // Para esta implementación simple, simplemente no podemos garantizar que las constantes sigan siendo válidas
-                    // a través de llamadas a funciones o saltos arbitrarios.
-                    // valoresConstantes.clear(); // Conservador: borrar todas las constantes conocidas
-                    // Para evitar perder oportunidades de optimización en bucles, no limpiar todo siempre.
-                    // Esto es un tradeoff entre simplicidad y agresividad de la optimización.
-                }
+                nuevoCodigo.add(instruccionModificada); // Añadir la instrucción, posiblemente propagada antes
             }
         }
         return nuevoCodigo;
     }
-
-    /**
-     * Aplica eliminación de código muerto (asignaciones a temporales no usadas).
-     * Nota: Esta es una eliminación de código muerto muy simple y conservadora.
-     * Una DCE completa requiere análisis de vivo (liveness analysis) y grafos de flujo de control.
-     * @param codigo Lista de instrucciones TAC.
-     * @return Nueva lista con código muerto simple eliminado.
-     */
-    private List<String> aplicarEliminacionCodigoMuerto(List<String> codigo) {
-        List<String> codigoFinalOptimizado = new ArrayList<>();
-        List<String> instruccionesEliminadas = new ArrayList<>();
-
-        // Paso para identificar las temporales no usadas
-        // Recorremos el código hacia adelante para encontrar usos futuros de temporales.
-        // Esto es una simplificación de un análisis de vivo (liveness analysis) real.
-
-        // Creamos un set de todas las temporales definidas.
-        Map<String, Boolean> temporalesDefinidas = new HashMap<>(); // temporal -> está definida en alguna asignación
-        // Creamos un set de todas las temporales usadas.
-        Map<String, Boolean> temporalesUsadas = new HashMap<>(); // temporal -> está usada en alguna expresión
-
-        // Primera pasada: Identificar todas las temporales definidas y usadas
-        for (String instruccion : codigo) {
-            Matcher matcherAsignacion = PATRON_ASIGNACION.matcher(instruccion);
-            Matcher matcherOperacionBinaria = PATRON_OPERACION_BINARIA.matcher(instruccion);
-            Matcher matcherOperacionUnaria = PATRON_OPERACION_UNARIA.matcher(instruccion);
-
-            String varDefinida = null;
-            if (matcherAsignacion.matches()) {
-                varDefinida = matcherAsignacion.group(1);
-            } else if (matcherOperacionBinaria.matches()) {
-                varDefinida = matcherOperacionBinaria.group(1);
-            } else if (matcherOperacionUnaria.matches()) {
-                varDefinida = matcherOperacionUnaria.group(1);
-            }
-
-            if (varDefinida != null && varDefinida.startsWith("t")) {
-                temporalesDefinidas.put(varDefinida, true);
-            }
-
-            // Identificar usos en el lado derecho de asignaciones, operaciones, condiciones, llamadas, retornos.
-            Pattern patronUsoVar = Pattern.compile("\\b(t\\d+|[a-zA-Z_][a-zA-Z0-9_]*)\\b");
-            Matcher matcherUso = patronUsoVar.matcher(instruccion);
-            while (matcherUso.find()) {
-                String varUsada = matcherUso.group(1);
-                // Asegurarse de que no estamos registrando la propia variable definida en la instrucción actual
-                // (ej. si 'x = x + 1', 'x' es definida y usada, pero la definición no es muerta por sí misma).
-                // Y que no sea un literal o una etiqueta.
-                if (parsearLiteral(varUsada) == null && !varUsada.matches("L\\d+")) {
-                    temporalesUsadas.put(varUsada, true);
-                }
-            }
-        }
-
-        // Segunda pasada: Construir el código optimizado, eliminando las temporales no usadas.
-        // Una temporal 'tX' se considera muerta si se define, pero nunca se usa *después* de su última definición.
-        // Para esta implementación simple, eliminamos una asignación a 'tX' si 'tX' nunca se usa en *todo el código*.
-        // Esto es una heurística agresiva y simplificada.
-
-        System.out.println("  -> Aplicando Eliminación de Código Muerto (simple)...");
-
-        for (String instruccion : codigo) {
-            Matcher matcherAsignacion = PATRON_ASIGNACION.matcher(instruccion);
-            Matcher matcherOperacionBinaria = PATRON_OPERACION_BINARIA.matcher(instruccion);
-            Matcher matcherOperacionUnaria = PATRON_OPERACION_UNARIA.matcher(instruccion);
-
-            String varDefinida = null;
-            if (matcherAsignacion.matches()) {
-                varDefinida = matcherAsignacion.group(1);
-            } else if (matcherOperacionBinaria.matches()) {
-                varDefinida = matcherOperacionBinaria.group(1);
-            } else if (matcherOperacionUnaria.matches()) {
-                varDefinida = matcherOperacionUnaria.group(1);
-            }
-
-            boolean debeMantenerse = true;
-            if (varDefinida != null && varDefinida.startsWith("t")) { // Solo considerar temporales para eliminación
-                if (!temporalesUsadas.getOrDefault(varDefinida, false)) {
-                    // Si la temporal fue definida pero nunca usada en ninguna parte del código, es código muerto.
-                    instruccionesEliminadas.add(instruccion);
-                    debeMantenerse = false;
-                }
-            }
-
-            if (debeMantenerse) {
-                codigoFinalOptimizado.add(instruccion);
-            }
-        }
-
-        instruccionesEliminadas.forEach(inst -> System.out.println("    - Eliminada instrucción muerta: " + inst));
-
-        return codigoFinalOptimizado;
-    }
-
 
     /**
      * Aplica la simplificación de expresiones aritméticas y lógicas básicas.
@@ -285,9 +217,11 @@ public class OptimizadorCodigo {
         System.out.println("  -> Aplicando Simplificación de Expresiones...");
 
         for (String instruccion : codigo) {
+            // Se crea un nuevo Matcher para cada instrucción en el bucle
+            // para asegurar que siempre opera sobre la cadena de instrucción actual.
             Matcher matcherOperacionBinaria = PATRON_OPERACION_BINARIA.matcher(instruccion);
-            String nuevaInstruccion = instruccion;
-            String instruccionOriginal = instruccion;
+            String nuevaInstruccion = instruccion; // Almacena la instrucción potencialmente simplificada
+            String instruccionOriginal = instruccion; // Guarda la original para el log
 
             if (matcherOperacionBinaria.matches()) {
                 String varTemporal = matcherOperacionBinaria.group(1);
@@ -295,61 +229,222 @@ public class OptimizadorCodigo {
                 String operador = matcherOperacionBinaria.group(4);
                 String op2Str = matcherOperacionBinaria.group(5);
 
+                // Intenta parsear los operandos como literales para la simplificación
                 Object op1 = parsearLiteral(op1Str);
                 Object op2 = parsearLiteral(op2Str);
 
                 // Reglas de simplificación
                 if (operador.equals("+")) {
-                    if (op2 instanceof Integer && (Integer)op2 == 0) { // x + 0 = x
+                    // x + 0 = x
+                    if (op2 instanceof Integer && (Integer)op2 == 0) {
                         nuevaInstruccion = varTemporal + " = " + op1Str;
-                    } else if (op1 instanceof Integer && (Integer)op1 == 0) { // 0 + x = x
+                    }
+                    // 0 + x = x
+                    else if (op1 instanceof Integer && (Integer)op1 == 0) {
                         nuevaInstruccion = varTemporal + " = " + op2Str;
                     }
                 } else if (operador.equals("-")) {
-                    if (op2 instanceof Integer && (Integer)op2 == 0) { // x - 0 = x
+                    // x - 0 = x
+                    if (op2 instanceof Integer && (Integer)op2 == 0) {
                         nuevaInstruccion = varTemporal + " = " + op1Str;
                     }
                 } else if (operador.equals("*")) {
-                    if (op1 instanceof Integer && (Integer)op1 == 1) { // 1 * x = x
+                    // 1 * x = x
+                    if (op1 instanceof Integer && (Integer)op1 == 1) {
                         nuevaInstruccion = varTemporal + " = " + op2Str;
-                    } else if (op2 instanceof Integer && (Integer)op2 == 1) { // x * 1 = x
+                    }
+                    // x * 1 = x
+                    else if (op2 instanceof Integer && (Integer)op2 == 1) {
                         nuevaInstruccion = varTemporal + " = " + op1Str;
-                    } else if ((op1 instanceof Integer && (Integer)op1 == 0) || (op2 instanceof Integer && (Integer)op2 == 0)) { // x * 0 = 0
+                    }
+                    // x * 0 = 0
+                    else if ((op1 instanceof Integer && (Integer)op1 == 0) || (op2 instanceof Integer && (Integer)op2 == 0)) {
                         nuevaInstruccion = varTemporal + " = 0";
                     }
                 } else if (operador.equals("/")) {
-                    if (op2 instanceof Integer && (Integer)op2 == 1) { // x / 1 = x
+                    // x / 1 = x
+                    if (op2 instanceof Integer && (Integer)op2 == 1) {
                         nuevaInstruccion = varTemporal + " = " + op1Str;
                     }
                 } else if (operador.equals("&&")) {
-                    if (op1 instanceof Boolean && !(Boolean)op1) { // false && x = false
+                    // false && x = false
+                    if (op1 instanceof Boolean && !(Boolean)op1) {
                         nuevaInstruccion = varTemporal + " = false";
-                    } else if (op2 instanceof Boolean && !(Boolean)op2) { // x && false = false
+                    }
+                    // x && false = false
+                    else if (op2 instanceof Boolean && !(Boolean)op2) {
                         nuevaInstruccion = varTemporal + " = false";
-                    } else if (op1 instanceof Boolean && (Boolean)op1) { // true && x = x
+                    }
+                    // true && x = x
+                    else if (op1 instanceof Boolean && (Boolean)op1) {
                         nuevaInstruccion = varTemporal + " = " + op2Str;
-                    } else if (op2 instanceof Boolean && (Boolean)op2) { // x && true = x
+                    }
+                    // x && true = x
+                    else if (op2 instanceof Boolean && (Boolean)op2) {
                         nuevaInstruccion = varTemporal + " = " + op1Str;
                     }
                 } else if (operador.equals("||")) {
-                    if (op1 instanceof Boolean && (Boolean)op1) { // true || x = true
+                    // true || x = true
+                    if (op1 instanceof Boolean && (Boolean)op1) {
                         nuevaInstruccion = varTemporal + " = true";
-                    } else if (op2 instanceof Boolean && (Boolean)op2) { // x || true = true
+                    }
+                    // x || true = true
+                    else if (op2 instanceof Boolean && (Boolean)op2) {
                         nuevaInstruccion = varTemporal + " = true";
-                    } else if (op1 instanceof Boolean && !(Boolean)op1) { // false || x = x
+                    }
+                    // false || x = x
+                    else if (op1 instanceof Boolean && !(Boolean)op1) {
                         nuevaInstruccion = varTemporal + " = " + op2Str;
-                    } else if (op2 instanceof Boolean && !(Boolean)op2) { // x || false = x
+                    }
+                    // x || false = x
+                    else if (op2 instanceof Boolean && !(Boolean)op2) {
                         nuevaInstruccion = varTemporal + " = " + op1Str;
                     }
                 }
+
+                // Si la instrucción fue modificada, registrarlo en el log
                 if (!nuevaInstruccion.equals(instruccionOriginal)) {
                     System.out.println("    - Simplificada: '" + instruccionOriginal + "' a '" + nuevaInstruccion + "'");
                 }
             }
-            // Para otras instrucciones (asignaciones literales ya simplificadas por plegado)
+            // Añade la instrucción (original o simplificada) a la nueva lista
             nuevoCodigo.add(nuevaInstruccion);
         }
         return nuevoCodigo;
+    }
+
+
+    /**
+     * Aplica eliminación de código muerto.
+     * Identifica y elimina asignaciones a temporales o variables cuyo valor nunca se utiliza
+     * después de esa asignación.
+     * @param codigo Lista de instrucciones TAC.
+     * @return Nueva lista con código muerto eliminado.
+     */
+    private List<String> aplicarEliminacionCodigoMuerto(List<String> codigo) {
+        List<String> codigoOptimizadoFinal = new ArrayList<>();
+        Set<String> instruccionesEliminadasLog = new HashSet<>(); // Para registrar las eliminadas
+
+        System.out.println("  -> Aplicando Eliminación de Código Muerto...");
+
+        // Paso 1: Recorrer el código de atrás hacia adelante para identificar todas las variables "vivas".
+        // Una variable está "viva" si su valor puede ser usado en el futuro.
+        Set<String> variablesVivas = new HashSet<>();
+
+        // Crear un mapa para las dependencias de control de flujo para saltos (goto, if)
+        // Por la simplicidad de este DCE, asumimos un flujo lineal simple para liveness.
+        // Un análisis de flujo de datos completo manejaría esto con un grafo de flujo de control.
+
+        for (int i = codigo.size() - 1; i >= 0; i--) {
+            String instruccion = codigo.get(i);
+
+            // Obtener variables USADAS en esta instrucción (operandos en RHS, condiciones, argumentos, retornos)
+            Pattern patronUsoVar = Pattern.compile("\\b(t\\d+|[a-zA-Z_][a-zA-Z0-9_]*)\\b");
+            Matcher matcherUso = patronUsoVar.matcher(instruccion);
+            Set<String> usosEnEstaInstruccion = new HashSet<>();
+            while (matcherUso.find()) {
+                String var = matcherUso.group(1);
+                // Excluir literales y etiquetas
+                if (parsearLiteral(var) == null && !var.matches("L\\d+")) {
+                    usosEnEstaInstruccion.add(var);
+                }
+            }
+
+            // Obtener la variable DEFINIDA en esta instrucción (LHS de asignación)
+            String varDefinida = null;
+            Matcher matcherAsignacion = PATRON_ASIGNACION.matcher(instruccion);
+            if (matcherAsignacion.matches()) {
+                varDefinida = matcherAsignacion.group(1);
+            } else {
+                Matcher matcherOperacionBinaria = PATRON_OPERACION_BINARIA.matcher(instruccion);
+                Matcher matcherOperacionUnaria = PATRON_OPERACION_UNARIA.matcher(instruccion);
+                if (matcherOperacionBinaria.matches()) {
+                    varDefinida = matcherOperacionBinaria.group(1);
+                } else if (matcherOperacionUnaria.matches()) {
+                    varDefinida = matcherOperacionUnaria.group(1);
+                }
+            }
+            // Manejar LHS de llamadas/pops
+            if (instruccion.contains(" = call ") || instruccion.contains(" = pop ")) {
+                Matcher callPopMatcher = Pattern.compile("^(t\\d+|[a-zA-Z_][a-zA-Z0-9_]*) = (call|pop) .*").matcher(instruccion);
+                if (callPopMatcher.matches()) {
+                    varDefinida = callPopMatcher.group(1);
+                }
+            }
+
+            // Actualizar el conjunto de variables vivas:
+            // Añadir todas las variables usadas en esta instrucción.
+            variablesVivas.addAll(usosEnEstaInstruccion);
+
+            // Si esta instrucción define una variable, entonces esa variable deja de estar viva *antes* de esta instrucción.
+            // (su valor anterior ya no es relevante si se va a redefinir o si no se usa más).
+            if (varDefinida != null && parsearLiteral(varDefinida) == null && !varDefinida.matches("L\\d+")) {
+                variablesVivas.remove(varDefinida);
+            }
+        } // Fin de la pasada hacia atrás
+
+        // Paso 2: Recorrer el código de adelante hacia atrás para construir el código optimizado,
+        // eliminando las instrucciones marcadas como muertas.
+        for (int i = 0; i < codigo.size(); i++) {
+            String instruccion = codigo.get(i);
+
+            String varDefinida = null;
+            Matcher matcherAsignacion = PATRON_ASIGNACION.matcher(instruccion);
+            if (matcherAsignacion.matches()) {
+                varDefinida = matcherAsignacion.group(1);
+            } else {
+                Matcher matcherOperacionBinaria = PATRON_OPERACION_BINARIA.matcher(instruccion);
+                Matcher matcherOperacionUnaria = PATRON_OPERACION_UNARIA.matcher(instruccion);
+                if (matcherOperacionBinaria.matches()) {
+                    varDefinida = matcherOperacionBinaria.group(1);
+                } else if (matcherOperacionUnaria.matches()) {
+                    varDefinida = matcherOperacionUnaria.group(1);
+                }
+            }
+            // Manejar LHS de llamadas/pops
+            if (instruccion.contains(" = call ") || instruccion.contains(" = pop ")) {
+                Matcher callPopMatcher = Pattern.compile("^(t\\d+|[a-zA-Z_][a-zA-Z0-9_]*) = (call|pop) .*").matcher(instruccion);
+                if (callPopMatcher.matches()) {
+                    varDefinida = callPopMatcher.group(1);
+                }
+            }
+
+            boolean esCodigoMuerto = false;
+            // Una instrucción de asignación (o definición) es código muerto si:
+            // 1. Define una variable/temporal (`varDefinida` no es null, literal o etiqueta).
+            // 2. Esa variable/temporal NO está "viva" después de esta instrucción (es decir, su valor no se usa más allá de aquí).
+            // 3. Y, CRÍTICO: Esa variable/temporal ES una TEMPORAL (empieza con 't').
+
+            if (varDefinida != null && !varDefinida.matches("L\\d+")) { // Excluir etiquetas
+                if (!variablesVivas.contains(varDefinida)) {
+                    // Si es una variable temporal (tX), la marcamos como código muerto.
+                    if (varDefinida.startsWith("t")) {
+                        esCodigoMuerto = true;
+                    }
+                    // Si es una variable de usuario (no empieza con 't'),
+                    // somos conservadores y NO la marcamos como código muerto
+                    // a menos que tengamos un análisis más profundo de efectos secundarios.
+                    // En este caso, el usuario espera que se queden.
+                }
+            }
+
+            // Siempre mantener instrucciones de control de flujo y definiciones de funciones/etiquetas.
+            // Estas no son asignaciones de "código muerto" en este contexto.
+            if (instruccion.contains(":") || instruccion.startsWith("goto ") || instruccion.startsWith("if ") ||
+                    instruccion.startsWith("return ") || instruccion.startsWith("push ") || instruccion.contains(" = call ") || instruccion.contains(" = pop ")) {
+                esCodigoMuerto = false;
+            }
+
+            if (esCodigoMuerto) {
+                instruccionesEliminadasLog.add(instruccion);
+            } else {
+                codigoOptimizadoFinal.add(instruccion);
+            }
+        }
+
+        instruccionesEliminadasLog.forEach(inst -> System.out.println("    - Eliminada instrucción muerta: " + inst));
+
+        return codigoOptimizadoFinal;
     }
 
     /**
@@ -369,8 +464,6 @@ public class OptimizadorCodigo {
                 } else if ("false".equalsIgnoreCase(s)) {
                     return false;
                 }
-                // Si es un ID, temporal, string o char literal, no es un literal numérico/booleano para plegado aquí.
-                // Los string/char literals se manejan en propagación como strings.
                 return null;
             }
         }
@@ -449,7 +542,7 @@ public class OptimizadorCodigo {
     private Object evaluarOperacionUnaria(Object op, String operador) {
         if (operador.equals("!") && op instanceof Boolean) {
             return !(Boolean) op;
-        } else if (operador.equals("!") && op instanceof Integer) { // Asumiendo que !0=1, !cualquierOtro=0
+        } else if (operador.equals("!") && op instanceof Integer) {
             return (Integer)op == 0 ? 1 : 0;
         }
         throw new IllegalArgumentException("Operación unaria no soportada o tipo incompatible: " + operador + op.getClass().getSimpleName());
