@@ -1,0 +1,55 @@
+// Código de tres direcciones generado automáticamente
+// Archivo: ejemplo_codigo_intermedio.txt
+// Total de instrucciones: 51
+
+  0: func_main:
+  1: t0 = 5
+  2: a = t0
+  3: t1 = 3
+  4: b = t1
+  5: t2 = 0
+  6: c = t2
+  7: t3 = a + b
+  8: res1 = t3
+  9: t4 = a - b
+ 10: t5 = t4 - c
+ 11: x = t5
+ 12: t6 = a > b
+ 13: if !t6 goto L1
+ 14: t7 = 1
+ 15: x = t7
+ 16: L1:
+ 17: t8 = 0
+ 18: sum_while = t8
+ 19: t9 = 0
+ 20: sum_for = t9
+ 21: t10 = 0
+ 22: i = t10
+ 23: L4:
+ 24: t11 = 5
+ 25: t12 = i < t11
+ 26: if !t12 goto L5
+ 27: t13 = sum_while + i
+ 28: sum_while = t13
+ 29: t14 = 1
+ 30: t15 = i + t14
+ 31: i = t15
+ 32: goto L4
+ 33: L5:
+ 34: t16 = 0
+ 35: j = t16
+ 36: L7:
+ 37: t17 = 10
+ 38: t18 = j < t17
+ 39: if !t18 goto L8
+ 40: t19 = sum_for + j
+ 41: sum_for = t19
+ 42: t20 = 2
+ 43: t21 = j + t20
+ 44: j = t21
+ 45: L9:
+ 46: goto L7
+ 47: L8:
+ 48: t22 = sum_while + sum_for
+ 49: final_result = t22
+ 50: end_func_main

@@ -28,6 +28,16 @@ public interface CompiladorListener extends ParseTreeListener {
 	 */
 	void exitSentencia(CompiladorParser.SentenciaContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link CompiladorParser#sentenciaAnidadas}.
+	 * @param ctx the parse tree
+	 */
+	void enterSentenciaAnidadas(CompiladorParser.SentenciaAnidadasContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CompiladorParser#sentenciaAnidadas}.
+	 * @param ctx the parse tree
+	 */
+	void exitSentenciaAnidadas(CompiladorParser.SentenciaAnidadasContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link CompiladorParser#sentenciaIf}.
 	 * @param ctx the parse tree
 	 */
@@ -37,6 +47,76 @@ public interface CompiladorListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitSentenciaIf(CompiladorParser.SentenciaIfContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CompiladorParser#sentenciaWhile}.
+	 * @param ctx the parse tree
+	 */
+	void enterSentenciaWhile(CompiladorParser.SentenciaWhileContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CompiladorParser#sentenciaWhile}.
+	 * @param ctx the parse tree
+	 */
+	void exitSentenciaWhile(CompiladorParser.SentenciaWhileContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CompiladorParser#sentenciaFor}.
+	 * @param ctx the parse tree
+	 */
+	void enterSentenciaFor(CompiladorParser.SentenciaForContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CompiladorParser#sentenciaFor}.
+	 * @param ctx the parse tree
+	 */
+	void exitSentenciaFor(CompiladorParser.SentenciaForContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CompiladorParser#declaracionVariableInternaFor}.
+	 * @param ctx the parse tree
+	 */
+	void enterDeclaracionVariableInternaFor(CompiladorParser.DeclaracionVariableInternaForContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CompiladorParser#declaracionVariableInternaFor}.
+	 * @param ctx the parse tree
+	 */
+	void exitDeclaracionVariableInternaFor(CompiladorParser.DeclaracionVariableInternaForContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CompiladorParser#expresionNoPuntoComa}.
+	 * @param ctx the parse tree
+	 */
+	void enterExpresionNoPuntoComa(CompiladorParser.ExpresionNoPuntoComaContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CompiladorParser#expresionNoPuntoComa}.
+	 * @param ctx the parse tree
+	 */
+	void exitExpresionNoPuntoComa(CompiladorParser.ExpresionNoPuntoComaContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CompiladorParser#sentenciaBreak}.
+	 * @param ctx the parse tree
+	 */
+	void enterSentenciaBreak(CompiladorParser.SentenciaBreakContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CompiladorParser#sentenciaBreak}.
+	 * @param ctx the parse tree
+	 */
+	void exitSentenciaBreak(CompiladorParser.SentenciaBreakContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CompiladorParser#sentenciaContinue}.
+	 * @param ctx the parse tree
+	 */
+	void enterSentenciaContinue(CompiladorParser.SentenciaContinueContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CompiladorParser#sentenciaContinue}.
+	 * @param ctx the parse tree
+	 */
+	void exitSentenciaContinue(CompiladorParser.SentenciaContinueContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CompiladorParser#sentenciaLlamadaFuncion}.
+	 * @param ctx the parse tree
+	 */
+	void enterSentenciaLlamadaFuncion(CompiladorParser.SentenciaLlamadaFuncionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CompiladorParser#sentenciaLlamadaFuncion}.
+	 * @param ctx the parse tree
+	 */
+	void exitSentenciaLlamadaFuncion(CompiladorParser.SentenciaLlamadaFuncionContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link CompiladorParser#bloque}.
 	 * @param ctx the parse tree
@@ -142,6 +222,18 @@ public interface CompiladorListener extends ParseTreeListener {
 	 */
 	void exitExpDecimal(CompiladorParser.ExpDecimalContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code expTrue}
+	 * labeled alternative in {@link CompiladorParser#expresion}.
+	 * @param ctx the parse tree
+	 */
+	void enterExpTrue(CompiladorParser.ExpTrueContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code expTrue}
+	 * labeled alternative in {@link CompiladorParser#expresion}.
+	 * @param ctx the parse tree
+	 */
+	void exitExpTrue(CompiladorParser.ExpTrueContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code expBinaria}
 	 * labeled alternative in {@link CompiladorParser#expresion}.
 	 * @param ctx the parse tree
@@ -202,6 +294,18 @@ public interface CompiladorListener extends ParseTreeListener {
 	 */
 	void exitExpVariable(CompiladorParser.ExpVariableContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code expCadena}
+	 * labeled alternative in {@link CompiladorParser#expresion}.
+	 * @param ctx the parse tree
+	 */
+	void enterExpCadena(CompiladorParser.ExpCadenaContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code expCadena}
+	 * labeled alternative in {@link CompiladorParser#expresion}.
+	 * @param ctx the parse tree
+	 */
+	void exitExpCadena(CompiladorParser.ExpCadenaContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code expFuncion}
 	 * labeled alternative in {@link CompiladorParser#expresion}.
 	 * @param ctx the parse tree
@@ -213,6 +317,18 @@ public interface CompiladorListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitExpFuncion(CompiladorParser.ExpFuncionContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code expFalse}
+	 * labeled alternative in {@link CompiladorParser#expresion}.
+	 * @param ctx the parse tree
+	 */
+	void enterExpFalse(CompiladorParser.ExpFalseContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code expFalse}
+	 * labeled alternative in {@link CompiladorParser#expresion}.
+	 * @param ctx the parse tree
+	 */
+	void exitExpFalse(CompiladorParser.ExpFalseContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link CompiladorParser#operadorBinario}.
 	 * @param ctx the parse tree

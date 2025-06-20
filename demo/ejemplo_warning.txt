@@ -1,0 +1,116 @@
+// ======================================
+// Bloque de errores y advertencias
+// ======================================
+
+// 1. Advertencia: No usar variables (variable 'a' y 'z' no usadas)
+// 2. Error: Asignación de tipo diferente (int x = "hola")
+int x = "hola"; // Error: Asignación de tipo diferente
+
+// 3. Error: Asignar valor a una variable no definida (variable 'no_existente')
+no_existente = 10; // Error: Variable no definida
+
+// 4. Error: Declarar 2 veces una variable con diferente tipo de datos.
+int redefinida = 5;
+double redefinida = 10.5; // Error: Variable redefinida con diferente tipo
+
+// 5. Advertencia: Importar librerías y no usarla (Si tu lenguaje lo soporta, aquí iría una importación no usada)
+// NOTA: Tu gramática no tiene una regla de importación, así que este caso podría no aplicar.
+// Si tuvieras algo como: import "mi_libreria";
+// Y luego no usaras nada de mi_libreria, sería una advertencia.
+
+// 6. Error: Referenciar a una variable/función no definida en el ámbito (uso de 'otra_var' y 'func_no_def')
+void miFuncion() {
+    int local_var = 1;
+    // Error: 'otra_var' no definida en este ámbito
+    local_var = otra_var + 5;
+
+    // Error: 'func_no_def' no definida
+    func_no_def();
+}
+
+// 7. Error: Llamar función que esta declarada mas abajo (esto debería dar un error si no hay forward declaration)
+// int resultado = funcionNoDeclaradaArriba(1, 2); // Esto depende del pase del compilador. Si es de 1 pase, error.
+
+// 8. Error: Reasignar valor de const (si soportas constantes)
+// NOTA: Tu gramática no tiene una palabra clave 'const', así que este caso podría no aplicar directamente.
+// Si tuvieras: const int MI_CONST = 10;
+// Y luego: MI_CONST = 20; // Esto sería un error.
+
+// 9. Advertencia: No usar funciones (la función 'funcionNoUsada' no se llama)
+int funcionNoUsada() {
+    return 0;
+}
+
+// 10. Advertencia: Bucles infinitos
+while (true) { // O while (1 == 1) como en tu ejemplo
+    int bucle_var; // Advertencia: Variable 'bucle_var' declarada pero no usada
+    break; // Para evitar que el bucle sea REALMENTE infinito si lo ejecutas.
+}
+
+// 11. Error: Parámetros no esperados (en la llamada a 'cuadrado')
+int cuadrado(int x) { // Declarada con un solo parámetro
+    return x * x;
+}
+int valor = cuadrado(5, 10); // Error: Pasando 2 parámetros, se espera 1
+
+// 12. Advertencia: Parámetros no utilizados (en 'funcionConParametroNoUsado')
+void funcionConParametroNoUsado(int a, int b) {
+    int resultado = a + 1; // 'b' no se usa
+    return;
+}
+
+// 13. Error: Retornar tipo de datos incorrecto (la función retorna int, pero se intenta retornar un char)
+int funcionConRetornoIncorrecto() {
+    return 'c'; // Error: Retornando char, se espera int
+}
+
+// 14. Error: Retorno faltante en función con tipo de retorno (similar al de main)
+int funcionSinRetorno() {
+    int temp = 5;
+    // Falta sentencia return
+}
+
+// ======================================
+// Bloque principal con más pruebas
+// ======================================
+int main() {
+    int a; // Advertencia: 'a' declarada pero no usada (si no se usa más adelante)
+    int b = 10;
+    int c = 5;
+    double d = 2.5;
+
+    // Asignación a variable no definida (reconfirmar)
+    z = 100; // Error: 'z' no declarada
+
+    // Asignación de tipos incompatibles (reconfirmar)
+    b = d; // Error: Asignando double a int
+    a = 'A'; // Error: Asignando char a int
+
+    // Uso de variable no definida en expresión
+    b = b + f; // Error: 'f' no declarada
+
+    // Llamada a función con argumentos incorrectos (reconfirmar)
+    miFuncion(1); // Error: 'miFuncion' no espera parámetros
+
+    // Uso de 'cuadrado' con el error de parámetros
+    // int val = cuadrado(3, 4); // Este ya está arriba
+
+    // Otro bucle infinito
+    for (;;) { // Bucle infinito clásico
+        int z; // Advertencia: 'z' declarada pero no usada
+        break;
+    }
+
+    // Retorno faltante en main
+    // Error: Este es el que ya te detecta
+    // Si llegamos aquí, main no ha retornado explícitamente.
+}
+
+// 7b. Declaración de función que se llamó arriba (Si tu compilador soporta forward declarations o es de 2 pases,
+// este es el punto donde 'funcionNoDeclaradaArriba' se definiría.
+// Para un compilador de 1 pase simple, la llamada en 7 ya habría fallado).
+/*
+int funcionNoDeclaradaArriba(int p1, int p2) {
+    return p1 + p2;
+}
+*/

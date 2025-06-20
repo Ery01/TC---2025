@@ -40,6 +40,18 @@ public class CompiladorBaseListener implements CompiladorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterSentenciaAnidadas(CompiladorParser.SentenciaAnidadasContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSentenciaAnidadas(CompiladorParser.SentenciaAnidadasContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterSentenciaIf(CompiladorParser.SentenciaIfContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -47,6 +59,90 @@ public class CompiladorBaseListener implements CompiladorListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitSentenciaIf(CompiladorParser.SentenciaIfContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterSentenciaWhile(CompiladorParser.SentenciaWhileContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSentenciaWhile(CompiladorParser.SentenciaWhileContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterSentenciaFor(CompiladorParser.SentenciaForContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSentenciaFor(CompiladorParser.SentenciaForContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterDeclaracionVariableInternaFor(CompiladorParser.DeclaracionVariableInternaForContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitDeclaracionVariableInternaFor(CompiladorParser.DeclaracionVariableInternaForContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExpresionNoPuntoComa(CompiladorParser.ExpresionNoPuntoComaContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExpresionNoPuntoComa(CompiladorParser.ExpresionNoPuntoComaContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterSentenciaBreak(CompiladorParser.SentenciaBreakContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSentenciaBreak(CompiladorParser.SentenciaBreakContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterSentenciaContinue(CompiladorParser.SentenciaContinueContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSentenciaContinue(CompiladorParser.SentenciaContinueContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterSentenciaLlamadaFuncion(CompiladorParser.SentenciaLlamadaFuncionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSentenciaLlamadaFuncion(CompiladorParser.SentenciaLlamadaFuncionContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -172,6 +268,18 @@ public class CompiladorBaseListener implements CompiladorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterExpTrue(CompiladorParser.ExpTrueContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExpTrue(CompiladorParser.ExpTrueContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterExpBinaria(CompiladorParser.ExpBinariaContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -232,6 +340,18 @@ public class CompiladorBaseListener implements CompiladorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterExpCadena(CompiladorParser.ExpCadenaContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExpCadena(CompiladorParser.ExpCadenaContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterExpFuncion(CompiladorParser.ExpFuncionContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -239,6 +359,18 @@ public class CompiladorBaseListener implements CompiladorListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitExpFuncion(CompiladorParser.ExpFuncionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExpFalse(CompiladorParser.ExpFalseContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExpFalse(CompiladorParser.ExpFalseContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

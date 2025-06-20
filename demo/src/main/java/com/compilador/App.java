@@ -6,7 +6,8 @@ import org.antlr.v4.runtime.tree.*;
 import org.antlr.v4.gui.TreeViewer;
 
 import javax.swing.*;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.*;
 import java.util.*;
 
 public class App {
@@ -17,12 +18,27 @@ public class App {
         }
 
         try {
+            // Obtener el nombre del archivo de entrada para generar nombres de salida
+            String inputFilePath = args[0];
+            String inputFileName = new File(inputFilePath).getName();
+            String baseName = inputFileName.substring(0, inputFileName.lastIndexOf('.'));
+
+            // Verificar que el archivo existe
+            File inputFile = new File(inputFilePath);
+            if (!inputFile.exists()) {
+                System.err.println("❌ Error: El archivo '" + inputFilePath + "' no existe.");
+                System.exit(1);
+            }
+
+            System.out.println("🚀 Iniciando compilación de: " + inputFilePath);
+            System.out.println("=".repeat(60));
+
             // 1. ANÁLISIS LÉXICO
-            System.out.println("Analizando archivo: " + args[0]);
-            CharStream input = CharStreams.fromFileName(args[0]);
+            System.out.println("\n=== ANÁLISIS LÉXICO ===");
+            CharStream input = CharStreams.fromFileName(inputFilePath);
 
             List<String> erroresLexicos = new ArrayList<>();
-            CompiladorLexer lexer = new CompiladorLexer(input);
+            CompiladorLexer lexer = new CompiladorLexer(input); // Usando tu CompiladorLexer
             lexer.removeErrorListeners();
             lexer.addErrorListener(new BaseErrorListener() {
                 @Override
@@ -36,7 +52,6 @@ public class App {
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             tokens.fill();
 
-            System.out.println("\n=== ANÁLISIS LÉXICO ===");
             if (erroresLexicos.isEmpty()) {
                 System.out.printf("%-20s %-30s %-10s %-10s\n", "TIPO", "LEXEMA", "LÍNEA", "COLUMNA");
                 System.out.println("-------------------------------------------------------------------");
@@ -54,7 +69,8 @@ public class App {
             }
 
             // 2. ANÁLISIS SINTÁCTICO
-            CompiladorParser parser = new CompiladorParser(tokens);
+            System.out.println("\n=== ANÁLISIS SINTÁCTICO ===");
+            CompiladorParser parser = new CompiladorParser(tokens); // Usando tu CompiladorParser
             List<String> erroresSintacticos = new ArrayList<>();
             parser.removeErrorListeners();
             parser.addErrorListener(new BaseErrorListener() {
@@ -65,7 +81,6 @@ public class App {
                 }
             });
 
-            System.out.println("\n=== ANÁLISIS SINTÁCTICO ===");
             ParseTree tree = parser.programa();
             if (!erroresSintacticos.isEmpty()) {
                 erroresSintacticos.forEach(System.out::println);
@@ -76,38 +91,146 @@ public class App {
                 System.out.println(tree.toStringTree(parser));
             }
 
-            // 3. VISUALIZACIÓN DEL ÁRBOL SINTÁCTICO
-            generarImagenArbolSintactico(tree, parser);
+            // 3. VISUALIZACIÓN DEL ÁRBOL SINTÁCTICO (Opcional, puede comentar esta línea si no lo necesita)
+            // generarImagenArbolSintactico(tree, parser);
+            // System.out.println("   📊 Ventana del árbol sintáctico abierta"); // Removido si se comenta la línea anterior
 
-            // 4. ANÁLISIS SEMÁNTICO
+            // Listas para errores y advertencias semánticas y de código intermedio
+            List<String> erroresSemanticos = new ArrayList<>();
+            List<String> warningsGenerales = new ArrayList<>(); // Ahora se usa para warnings de listener, caminante y visitor
+
+            // 4. ANÁLISIS SEMÁNTICO (Fase 1: Listener)
+            System.out.println("\n=== ANÁLISIS SEMÁNTICO (Fase 1: Listener) ===");
             SimbolosListener listener = new SimbolosListener();
             ParseTreeWalker walker = new ParseTreeWalker();
             walker.walk(listener, tree);
 
             TablaSimbolos tabla = listener.getTablaSimbolos();
+            erroresSemanticos.addAll(listener.getErrores());
+            warningsGenerales.addAll(listener.getWarnings()); // Agrega warnings del listener
+
+            // Mostrar tabla de símbolos
+            System.out.println("\n=== TABLA DE SÍMBOLOS ===");
             tabla.imprimir();
 
-            List<String> erroresSemanticos = listener.getErrores();
+            // 5. ANÁLISIS SEMÁNTICO (Fase 2: Visitor - Caminante)
+            System.out.println("\n=== ANÁLISIS SEMÁNTICO (Fase 2: Visitor - Caminante) ===");
+            Caminante caminanteVisitor = new Caminante(tabla, erroresSemanticos, warningsGenerales); // Pasa las mismas listas
+            caminanteVisitor.visit(tree);
+            // Los errores y warnings de Caminante ya se agregan a las listas compartidas
+
+            // 6. Reportar Errores y Advertencias Semánticas
             if (!erroresSemanticos.isEmpty()) {
-                System.out.println("\n=== ERRORES SEMÁNTICOS ===");
+                System.out.println("\n❌ ERRORES SEMÁNTICOS:");
                 erroresSemanticos.forEach(System.out::println);
+                return; // No continuar si hay errores semánticos
             } else {
                 System.out.println("\n✅ Análisis semántico completado sin errores.");
             }
 
+            // 7. Verificación final de variables/funciones no usadas (después de ambos pases semánticos)
+            System.out.println("\n=== ADVERTENCIAS FINALES (Uso de Símbolos) ===");
+            for (TablaSimbolos.Simbolo simbolo : tabla.getTodosSimbolos()) {
+                if (simbolo.getCategoria().equals("variable") && !simbolo.isUsada()) {
+                    warningsGenerales.add("Advertencia en línea " + simbolo.getLinea() +
+                            ": Variable '" + simbolo.getNombre() + "' declarada pero no usada.");
+                }
+                if (simbolo.getCategoria().equals("funcion") && !simbolo.isUsada() && !simbolo.getNombre().equals("main")) {
+                    warningsGenerales.add("Advertencia en línea " + simbolo.getLinea() +
+                            ": Función '" + simbolo.getNombre() + "' declarada pero no llamada.");
+                }
+            }
+
+            if (!warningsGenerales.isEmpty()) {
+                System.out.println("\n⚠️ ADVERTENCIAS DETECTADAS:");
+                warningsGenerales.forEach(System.out::println);
+            } else {
+                System.out.println("\n✅ No se detectaron advertencias.");
+            }
+
+            // 8. GENERACIÓN DE CÓDIGO INTERMEDIO
+            System.out.println("\n=== GENERACIÓN DE CÓDIGO INTERMEDIO ===");
+            // Crear el visitor con la tabla de símbolos y las listas de errores/warnings
+            CodigoVisitor visitor = new CodigoVisitor(tabla, erroresSemanticos, warningsGenerales); // Pasa las listas
+
+            // Recorrer el AST para generar código intermedio
+            visitor.visit(tree);
+
+            // Obtener el generador con el código generado
+            GeneradorCodigo generador = visitor.getGenerador();
+
+            // Si hay errores durante la generación de TAC, reportarlos y salir
+            if (!erroresSemanticos.isEmpty()) {
+                System.out.println("\n❌ ERRORES DURANTE LA GENERACIÓN DE CÓDIGO INTERMEDIO:");
+                erroresSemanticos.forEach(System.out::println);
+                return;
+            } else {
+                System.out.println("✅ Generación de Código Intermedio completada sin errores.");
+            }
+
+            // Mostrar el código generado en consola
+            System.out.println("\n📝 === CÓDIGO DE TRES DIRECCIONES ===");
+            generador.imprimirCodigo();
+
+            // Mostrar estadísticas
+            generador.imprimirEstadisticas();
+
+            // Guardar código intermedio en archivo
+            String codigoIntermedioPath = baseName + "_codigo_intermedio.txt";
+            guardarCodigoEnArchivo(generador.getCodigo(), codigoIntermedioPath);
+            System.out.println("\n💾 Código intermedio guardado en: " + codigoIntermedioPath);
+
+            // 9. RESUMEN FINAL
+            System.out.println("\n=== RESUMEN DE COMPILACIÓN ===");
+            System.out.println("Archivo procesado: " + inputFilePath);
+            System.out.println("Tokens analizados: " + (tokens.size() - 1));
+            System.out.println("Símbolos en tabla: " + tabla.getTodosSimbolos().size()); // Usar el método size real de TablaSimbolos
+            System.out.println("Instrucciones generadas: " + generador.getCodigo().size());
+            System.out.println("Archivo de salida: " + codigoIntermedioPath);
+
+            if (erroresLexicos.isEmpty() && erroresSintacticos.isEmpty() && erroresSemanticos.isEmpty()) {
+                System.out.println("\n🎉 ¡COMPILACIÓN EXITOSA! 🎉");
+            } else {
+                System.out.println("\n❌ COMPILACIÓN FALLIDA debido a errores.");
+            }
+
         } catch (IOException e) {
-            System.err.println("❌ Error al leer el archivo: " + e.getMessage());
+            System.err.println("❌ Error al leer o escribir archivos: " + e.getMessage());
         } catch (ParseCancellationException e) {
-            System.err.println("❌ Error de análisis: " + e.getMessage());
+            System.err.println("❌ Error de análisis (Léxico/Sintáctico): " + e.getMessage());
         } catch (Exception e) {
             System.err.println("❌ Error inesperado:");
             e.printStackTrace();
         }
     }
 
+    /**
+     * Guarda una lista de líneas de código en un archivo de texto
+     */
+    private static void guardarCodigoEnArchivo(List<String> codigo, String rutaArchivo) throws IOException {
+        Path filePath = Paths.get(rutaArchivo);
+        try (BufferedWriter writer = Files.newBufferedWriter(filePath)) {
+            writer.write("// Código de tres direcciones generado automáticamente");
+            writer.newLine();
+            writer.write("// Archivo: " + rutaArchivo);
+            writer.newLine();
+            writer.write("// Total de instrucciones: " + codigo.size());
+            writer.newLine();
+            writer.newLine();
+
+            for (int i = 0; i < codigo.size(); i++) {
+                writer.write(String.format("%3d: %s", i, codigo.get(i)));
+                writer.newLine();
+            }
+        }
+    }
+
+    /**
+     * Genera y muestra el árbol sintáctico visualmente (Opcional, se puede comentar)
+     */
     private static void generarImagenArbolSintactico(ParseTree tree, Parser parser) {
         try {
-            JFrame frame = new JFrame("Árbol Sintáctico");
+            JFrame frame = new JFrame("Árbol Sintáctico - Compilador");
             JPanel panel = new JPanel();
 
             TreeViewer viewer = new TreeViewer(Arrays.asList(parser.getRuleNames()), tree);
@@ -117,16 +240,21 @@ public class App {
 
             JScrollPane scrollPane = new JScrollPane(panel);
             scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            // CORREGIDO: "VERTICAL_SCROLLBAR_AS_NEEDED" con 'B' mayúscula en 'ScrollBar'
             scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
             frame.add(scrollPane);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(800, 600);
-//            frame.setVisible(true);
+            frame.setSize(1000, 700);
+            frame.setLocationRelativeTo(null); // Centrar ventana
+
+            // frame.setVisible(true); // Descomentar si quieres que la ventana del AST no bloquee la ejecución
+
             viewer.open();  // Esto lanza una ventana gráfica con el árbol de análisis
 
         } catch (Exception e) {
             System.err.println("❌ Error al mostrar árbol sintáctico: " + e.getMessage());
+            System.err.println("   ⚠️ La visualización del AST falló, pero la compilación continúa...");
         }
     }
 }

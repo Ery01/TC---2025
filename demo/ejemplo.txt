@@ -1,45 +1,36 @@
-int calculaMax(int a, int b) {
-    int resultado;
-
-    if (a > b) {
-        resultado = a;
-    } else {
-        resultado = b;
-    }
-
-    return resultado;
-}
-
-int calculaOperacion(int x, int y) {
-    int temp1;
-    int temp2;
-    int resultado;
-
-    temp1 = 10;
-    temp2 = 5;
-
-    if (x < 0) {
-        temp1 = 0;
-    }
-
-    resultado = x * temp1 + y * temp2;
-
-    if (resultado > 100) {
-        resultado = 100;
-    }
-
-    return resultado;
-}
-
 void main() {
     int a;
     int b;
-    int res1;
+    int c;
+    int x;
     int res2;
-
+    
     a = 5;
     b = 3;
+    c = 0;
+    int res1 = a + b;
+    x = a - b - c;
 
-    res1 = calculaMax(a, b);
-    res2 = calculaOperacion(a, b);
+    if (a > b) { x = 1; }
+
+
+    int i;
+    int j;
+    int sum_while = 0;
+    int sum_for = 0;
+
+    i = 0;
+    while (i < 5) {
+        sum_while = sum_while + i;
+        i = i + 1;
+    }
+
+    j = 0;
+
+    for (j; j < 10; ) {
+        sum_for = sum_for + j;
+        j = j + 2;
+    }
+
+    int final_result = sum_while + sum_for;
 }
