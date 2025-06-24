@@ -4,16 +4,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Stack; // ¡Nuevo import!
-import java.util.Comparator; // Para ordenar al imprimir
-import java.util.stream.Collectors; // Para ordenar al imprimir
+import java.util.Stack;
+import java.util.Comparator;
 
 /**
  * Implementación sencilla de una tabla de símbolos para el compilador
  */
 public class TablaSimbolos {
 
-    // Clase para representar un símbolo
     public static class Simbolo {
         private String nombre;
         private String tipo;        // int, char, double, void
@@ -60,7 +58,6 @@ public class TablaSimbolos {
         public void setUsada(boolean usada) { this.usada = usada; }
         public void setInicializada(boolean inicializada) { this.inicializada = inicializada; }
 
-        // Agregar un parámetro a una función (solo para el símbolo de la función)
         public void addParametro(String tipo) {
             this.parametros.add(tipo);
         }
@@ -85,8 +82,6 @@ public class TablaSimbolos {
             return sb.toString();
         }
     }
-
-    // Usaremos un mapa para almacenar símbolos, con una clave compuesta de nombre y ámbito
     private Map<String, Simbolo> simbolosMap; // Clave: "nombre_ambito"
 
     /**
@@ -95,9 +90,6 @@ public class TablaSimbolos {
     public TablaSimbolos() {
         this.simbolosMap = new HashMap<>();
     }
-
-    // Eliminamos setAmbito y getAmbito ya que el manejo de ámbito se hará con una pila externa
-    // y la búsqueda los usará como parámetro.
 
     /**
      * Agrega un símbolo a la tabla.
@@ -108,7 +100,7 @@ public class TablaSimbolos {
     public boolean agregar(Simbolo simbolo) {
         String clave = simbolo.getNombre() + "_" + simbolo.getAmbito();
         if (simbolosMap.containsKey(clave)) {
-            return false; // Ya existe un símbolo con este nombre en este ámbito
+            return false;
         }
         simbolosMap.put(clave, simbolo);
         return true;
@@ -122,7 +114,6 @@ public class TablaSimbolos {
      * @return El símbolo encontrado o null si no existe
      */
     public Simbolo buscar(String nombre, Stack<String> ambitoStack) {
-        // Recorre la pila de ámbitos desde el más interno (cima) hasta el global
         for (int i = ambitoStack.size() - 1; i >= 0; i--) {
             String currentAmbito = ambitoStack.get(i);
             String clave = nombre + "_" + currentAmbito;
@@ -130,10 +121,6 @@ public class TablaSimbolos {
                 return simbolosMap.get(clave);
             }
         }
-        // Si no se encuentra en ningún ámbito específico,
-        // podrías querer buscar funciones que siempre son globales y podrían no tener "global" en su clave
-        // dependiendo de cómo las agregues.
-        // Si las funciones se agregan explícitamente con ámbito "global", la búsqueda anterior las encontrará.
         return null;
     }
 
@@ -167,7 +154,6 @@ public class TablaSimbolos {
                 "NOMBRE", "TIPO", "CAT.", "LÍNEA", "COLUMNA", "ÁMBITO", "INICIALIZADA", "USADA", "PARÁMETROS");
         System.out.println("--------------------------------------------------------------------------------------------------------------------");
 
-        // Ordenar los símbolos para una salida consistente
         simbolosMap.values().stream()
                 .sorted(Comparator.comparing(Simbolo::getAmbito)
                         .thenComparing(Simbolo::getLinea)
@@ -182,22 +168,21 @@ public class TablaSimbolos {
      * @return true si los parámetros coinciden, false en caso contrario
      */
     public boolean verificarParametros(String nombreFuncion, List<String> tiposArgumentos) {
-        // Asumimos que las funciones siempre se buscan en el ámbito "global"
         Simbolo funcionSimbolo = buscarEnAmbitoDirecto(nombreFuncion, "global");
 
         if (funcionSimbolo == null || !funcionSimbolo.getCategoria().equals("funcion")) {
-            return false; // La función no existe o no es una función
+            return false;
         }
 
         List<String> tiposEsperados = funcionSimbolo.getParametros();
 
         if (tiposEsperados.size() != tiposArgumentos.size()) {
-            return false; // Número de argumentos diferente
+            return false;
         }
 
         for (int i = 0; i < tiposEsperados.size(); i++) {
             if (!esTipoCompatible(tiposEsperados.get(i), tiposArgumentos.get(i))) {
-                return false; // Tipos no compatibles
+                return false;
             }
         }
         return true;

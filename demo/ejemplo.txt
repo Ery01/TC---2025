@@ -7,8 +7,8 @@ void main() {
     int b;
     int c = 2;
     int d;
-    d = d;
-    d = d + 0;
+    d = d; // Esta línea debería ser eliminada por el optimizador de asignaciones redundantes, si se implementa.
+    d = d + 0; // Esta línea debería ser simplificada a d = d por el optimizador.
     d = d + 1;
     a = 5;
     b = 25;
@@ -19,18 +19,15 @@ void main() {
         b = b + 2;
     }
 
-
     int sum_of_i_cubed = 0;
     int i = 0;
-    for (i; i < 5; i+1) {
+    // Bucle FOR: La actualización ahora es una asignación explícita (i = i + 1)
+    for (i; i < 5; i = i + 1) {
         sum_of_i_cubed = sum_of_i_cubed + (i * i * i);
     }
 
+    // Este bucle 'while' siempre sera infinito, y su 'i' interna es codigo muerto.
     while(true) {
-        int i=1;
+        int i = 1;
     }
-
 }
-
-
-

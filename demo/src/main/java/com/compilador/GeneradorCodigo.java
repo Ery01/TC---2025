@@ -89,6 +89,15 @@ public class GeneradorCodigo {
     }
 
     /**
+     * Genera una instruccion generica de tres direcciones.
+     * Este metodo es util para instrucciones que no tienen un metodo 'gen' especifico.
+     * @param instruccion La instruccion TAC completa como String.
+     */
+    public void genInstruccion(String instruccion) {
+        codigo.add(instruccion);
+    }
+
+    /**
      * Obtiene la lista de todas las instrucciones de código de tres direcciones generadas.
      * @return Lista de strings representando las instrucciones TAC.
      */

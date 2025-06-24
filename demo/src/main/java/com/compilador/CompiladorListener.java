@@ -68,6 +68,26 @@ public interface CompiladorListener extends ParseTreeListener {
 	 */
 	void exitSentenciaFor(CompiladorParser.SentenciaForContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link CompiladorParser#forInitPart}.
+	 * @param ctx the parse tree
+	 */
+	void enterForInitPart(CompiladorParser.ForInitPartContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CompiladorParser#forInitPart}.
+	 * @param ctx the parse tree
+	 */
+	void exitForInitPart(CompiladorParser.ForInitPartContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CompiladorParser#forUpdatePart}.
+	 * @param ctx the parse tree
+	 */
+	void enterForUpdatePart(CompiladorParser.ForUpdatePartContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CompiladorParser#forUpdatePart}.
+	 * @param ctx the parse tree
+	 */
+	void exitForUpdatePart(CompiladorParser.ForUpdatePartContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link CompiladorParser#declaracionVariableInternaFor}.
 	 * @param ctx the parse tree
 	 */
@@ -177,6 +197,16 @@ public interface CompiladorListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitAsignacion(CompiladorParser.AsignacionContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CompiladorParser#asignacionNoPyC}.
+	 * @param ctx the parse tree
+	 */
+	void enterAsignacionNoPyC(CompiladorParser.AsignacionNoPyCContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CompiladorParser#asignacionNoPyC}.
+	 * @param ctx the parse tree
+	 */
+	void exitAsignacionNoPyC(CompiladorParser.AsignacionNoPyCContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link CompiladorParser#retorno}.
 	 * @param ctx the parse tree

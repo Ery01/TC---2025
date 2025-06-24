@@ -47,6 +47,18 @@ public interface CompiladorVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitSentenciaFor(CompiladorParser.SentenciaForContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link CompiladorParser#forInitPart}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitForInitPart(CompiladorParser.ForInitPartContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link CompiladorParser#forUpdatePart}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitForUpdatePart(CompiladorParser.ForUpdatePartContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link CompiladorParser#declaracionVariableInternaFor}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -112,6 +124,12 @@ public interface CompiladorVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitAsignacion(CompiladorParser.AsignacionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link CompiladorParser#asignacionNoPyC}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAsignacionNoPyC(CompiladorParser.AsignacionNoPyCContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link CompiladorParser#retorno}.
 	 * @param ctx the parse tree

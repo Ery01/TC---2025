@@ -26,13 +26,23 @@ sentenciaWhile
      : WHILE PA expresion PC bloque
      ;
 
-//sentenciaFor
-//    : FOR PA (declaracionVariable | asignacion)? PYC expresion? PYC asignacion? PC bloque
-//    ;
-
 sentenciaFor
-    : FOR PA (inicializacionDeclaracion=declaracionVariableInternaFor
-    | inicializacionExpresion=expresionNoPuntoComa)? PYC (condicion=expresion)? PYC (actualizacion=expresionNoPuntoComa)? PC bloque
+    : FOR PA
+      (forInit=forInitPart)? PYC
+      (forCond=expresion)? PYC
+      (forUpdate=forUpdatePart)?
+      PC bloque
+    ;
+
+forInitPart
+    : declaracionVariableInternaFor
+    | asignacionNoPyC
+    | expresionNoPuntoComa
+    ;
+
+forUpdatePart
+    : asignacionNoPyC
+    | expresionNoPuntoComa
     ;
 
 declaracionVariableInternaFor
@@ -77,6 +87,10 @@ declaracionVariable
 
 asignacion
     : ID IGUAL expresion PYC
+    ;
+
+asignacionNoPyC
+    : ID IGUAL expresion
     ;
 
 retorno

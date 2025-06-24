@@ -1,23 +1,17 @@
 package com.compilador;
 
-import org.antlr.v4.runtime.tree.TerminalNode;
 import com.compilador.CompiladorParser.*;
-import com.compilador.EvaluadorExpresiones;
-import com.compilador.TablaSimbolos;
 import com.compilador.TablaSimbolos.Simbolo;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Stack; // ¡Nuevo import!
+import java.util.Stack;
 
-public class Caminante extends CompiladorBaseVisitor<Object> { // Cambiado a Object porque puede devolver valores evaluados
+public class Caminante extends CompiladorBaseVisitor<Object> {
 
     private TablaSimbolos tablaSimbolos;
     private List<String> errores;
     private List<String> warnings;
 
-    // Pila de ámbitos para el Visitor.
-    // Para simplificar, la instanciamos aquí y la mantenemos manualmente para las visitas.
     private Stack<String> ambitoStack;
 
 
@@ -26,7 +20,7 @@ public class Caminante extends CompiladorBaseVisitor<Object> { // Cambiado a Obj
         this.errores = errores;
         this.warnings = warnings;
         this.ambitoStack = new Stack<>();
-        this.ambitoStack.push("global"); // Iniciar en el ámbito global
+        this.ambitoStack.push("global");
     }
 
     public TablaSimbolos getTablaSimbolos() {
@@ -63,7 +57,7 @@ public class Caminante extends CompiladorBaseVisitor<Object> { // Cambiado a Obj
 
     @Override
     public Object visitBloque(BloqueContext ctx) {
-        ambitoStack.push("bloque_" + System.nanoTime()); // Usar System.nanoTime() para un ID único si no tienes un contador global
+        ambitoStack.push("bloque_" + System.nanoTime());
         Object result = super.visitBloque(ctx);
         ambitoStack.pop();
         return result;
@@ -74,7 +68,6 @@ public class Caminante extends CompiladorBaseVisitor<Object> { // Cambiado a Obj
         EvaluadorExpresiones evaluador = new EvaluadorExpresiones(tablaSimbolos, ambitoStack, errores, warnings);
         Object resultadoCondicion = evaluador.visit(ctx.expresion());
 
-        // Solo verificar si la condición es una constante booleana
         if (resultadoCondicion instanceof Boolean) {
             boolean condicion = (Boolean) resultadoCondicion;
             if (!condicion) {
@@ -83,7 +76,6 @@ public class Caminante extends CompiladorBaseVisitor<Object> { // Cambiado a Obj
                 agregarWarning("Advertencia en línea " + ctx.getStart().getLine() + ": Condición verdadera constante en bucle `while`. Posible bucle infinito detectado.");
             }
         }
-        // Continuar visitando el cuerpo del while para análisis posteriores
         return visit(ctx.bloque());
     }
 
@@ -91,15 +83,15 @@ public class Caminante extends CompiladorBaseVisitor<Object> { // Cambiado a Obj
     public Object visitSentenciaFor(CompiladorParser.SentenciaForContext ctx) {
         EvaluadorExpresiones evaluador = new EvaluadorExpresiones(tablaSimbolos, ambitoStack, errores, warnings);
 
-        if (ctx.inicializacionDeclaracion != null) {
-            visit(ctx.inicializacionDeclaracion);
-        } else if (ctx.inicializacionExpresion != null) {
-            visit(ctx.inicializacionExpresion);
+        // 1. Inicializacion (ctx.forInit ahora es de tipo ForInitPartContext)
+        if (ctx.forInit != null) {
+            visit(ctx.forInit);
         }
 
         Object resultadoCondicion = null;
-        if (ctx.condicion != null) {
-            resultadoCondicion = evaluador.visit(ctx.condicion);
+        // 2. Condicion (ctx.forCond ahora es de tipo ExpresionContext)
+        if (ctx.forCond != null) {
+            resultadoCondicion = evaluador.visit(ctx.forCond);
         }
 
         if (resultadoCondicion instanceof Boolean) {
@@ -111,24 +103,24 @@ public class Caminante extends CompiladorBaseVisitor<Object> { // Cambiado a Obj
             }
         }
 
-        if (ctx.actualizacion != null) {
-            visit(ctx.actualizacion);
+        // 3. Actualizacion (ctx.forUpdate ahora es de tipo ForUpdatePartContext)
+        if (ctx.forUpdate != null) {
+            visit(ctx.forUpdate);
         }
 
+        // 4. Bloque del bucle
         return visit(ctx.bloque());
     }
 
+
     @Override
     public Object visitExpVariable(CompiladorParser.ExpVariableContext ctx) {
-        // Si Caminante necesita el tipo o valor, busca en la tabla:
         String nombre = ctx.ID().getText();
         Simbolo simbolo = tablaSimbolos.buscar(nombre, ambitoStack);
         if (simbolo == null) {
-            // Solo lo manejamos para evitar NullPointerException si la ejecución continúa.
-            // agregarError("Error (Caminante): variable '" + nombre + "' no declarada. Línea " + ctx.getStart().getLine());
-            return null; // O un valor que indique error
+            return null;
         }
-        return null; // No retornamos nada, solo visitamos
+        return null;
     }
 
     @Override

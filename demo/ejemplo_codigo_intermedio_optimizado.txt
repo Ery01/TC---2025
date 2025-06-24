@@ -1,6 +1,6 @@
 // Código de tres direcciones generado automáticamente
 // Archivo: ejemplo_codigo_intermedio_optimizado.txt
-// Total de instrucciones: 30
+// Total de instrucciones: 34
 
   0: func_cuadrado:
   1: return t0
@@ -8,27 +8,31 @@
   3: func_main:
   4: c = 2
   5: d = d
-  6: d = t3
-  7: d = t5
+  6: d = t1
+  7: d = t2
   8: a = 5
   9: b = 25
- 10: if !true goto L2
+ 10: if !true goto L0
  11: b = 23
- 12: goto L3
- 13: L2:
+ 12: goto L1
+ 13: L0:
  14: b = 25
- 15: L3:
+ 15: L1:
  16: sum_of_i_cubed = 0
  17: i = 0
- 18: L6:
- 19: if !true goto L7
- 20: sum_of_i_cubed = 0
- 21: L8:
- 22: goto L6
- 23: L7:
- 24: L10:
- 25: if !true goto L11
- 26: i = 1
- 27: goto L10
- 28: L11:
- 29: end_func_main
+ 18: goto L2
+ 19: L4:
+ 20: i = 1
+ 21: goto L2
+ 22: L2:
+ 23: if !true goto L5
+ 24: L3:
+ 25: sum_of_i_cubed = 1
+ 26: goto L4
+ 27: L5:
+ 28: L6:
+ 29: if !true goto L7
+ 30: i = 1
+ 31: goto L6
+ 32: L7:
+ 33: end_func_main

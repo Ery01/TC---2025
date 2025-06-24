@@ -1,7 +1,6 @@
-package com.compilador; // Asegúrate de que este sea tu paquete correcto
+package com.compilador;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
-import com.compilador.CompiladorLexer; // Necesario si usas CompiladorLexer.TOKEN_TYPE
 import java.util.List;
 import java.util.Stack;
 
@@ -25,38 +24,31 @@ public class EvaluadorExpresiones extends CompiladorBaseVisitor<Object> {
 
     @Override
     public Object visitExpEntero(CompiladorParser.ExpEnteroContext ctx) {
-        // CORREGIDO: Usamos el método generado para el token 'INTEGER'
         TerminalNode integerNode = ctx.INTEGER();
         if (integerNode != null) {
             return Integer.parseInt(integerNode.getText());
         }
-        // Este caso no debería ocurrir si la gramática es correcta
         errores.add("Error interno: No se encontró token INTEGER en expresión entera en línea " + ctx.getStart().getLine());
         return null;
     }
 
     @Override
     public Object visitExpDecimal(CompiladorParser.ExpDecimalContext ctx) {
-        // CORREGIDO: Usamos el método generado para el token 'DECIMAL'
         TerminalNode decimalNode = ctx.DECIMAL();
         if (decimalNode != null) {
             return Double.parseDouble(decimalNode.getText());
         }
-        // Este caso no debería ocurrir si la gramática es correcta
         errores.add("Error interno: No se encontró token DECIMAL en expresión decimal en línea " + ctx.getStart().getLine());
         return null;
     }
 
     @Override
     public Object visitExpCaracter(CompiladorParser.ExpCaracterContext ctx) {
-        // CORREGIDO: Usamos el método generado para el token 'CHARACTER'
         TerminalNode characterNode = ctx.CHARACTER();
         if (characterNode != null) {
             String text = characterNode.getText();
-            // Quita las comillas simples y devuelve el primer carácter
             return text.substring(1, text.length() - 1).charAt(0);
         }
-        // Este caso no debería ocurrir si la gramática es correcta
         errores.add("Error interno: No se encontró token CHARACTER en expresión de caracter en línea " + ctx.getStart().getLine());
         return null;
     }
@@ -76,11 +68,10 @@ public class EvaluadorExpresiones extends CompiladorBaseVisitor<Object> {
         String nombre = ctx.ID().getText();
         TablaSimbolos.Simbolo simbolo = tablaSimbolos.buscar(nombre, ambitoStack);
         if (simbolo != null && simbolo.getValor() != null) {
-            // Solo devuelve el valor si está disponible (es una constante conocida)
             return simbolo.getValor();
         }
         // errores.add("Error en línea " + ctx.getStart().getLine() + ": Variable '" + nombre + "' no evaluable como constante.");
-        return null; // No se puede evaluar como constante
+        return null;
     }
 
     @Override
@@ -88,7 +79,7 @@ public class EvaluadorExpresiones extends CompiladorBaseVisitor<Object> {
         Object valor = visit(ctx.expresion());
         if (valor instanceof Boolean) {
             return !((Boolean) valor);
-        } else if (valor instanceof Integer) { // Si usas int para booleanos (0/1)
+        } else if (valor instanceof Integer) {
             return ((Integer) valor) == 0 ? 1 : 0;
         }
         errores.add("Error en línea " + ctx.getStart().getLine() + ": Operador '!' aplicado a tipo no booleano/entero.");
@@ -182,7 +173,6 @@ public class EvaluadorExpresiones extends CompiladorBaseVisitor<Object> {
 
     @Override
     public Object visitExpFuncion(CompiladorParser.ExpFuncionContext ctx) {
-        // Las llamadas a funciones no son valores constantes que se puedan evaluar en esta fase.
         errores.add("Error en línea " + ctx.getStart().getLine() + ": Llamada a función '" + ctx.ID().getText() + "' no puede ser evaluada como una constante.");
         return null;
     }

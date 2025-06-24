@@ -15,6 +15,7 @@ com/compilador/TablaSimbolos$Simbolo.class
 com/compilador/CompiladorParser$DeclaracionVariableInternaForContext.class
 com/compilador/CompiladorParser$ExpBinariaContext.class
 com/compilador/CompiladorParser$SentenciaAnidadasContext.class
+com/compilador/CompiladorParser$AsignacionNoPyCContext.class
 com/compilador/CompiladorParser$ExpNegacionContext.class
 com/compilador/CompiladorParser$TipoContext.class
 com/compilador/CompiladorParser.class
@@ -23,6 +24,7 @@ com/compilador/CompiladorParser$ProgramaContext.class
 com/compilador/CompiladorParser$ExpCadenaContext.class
 com/compilador/App.class
 com/compilador/CompiladorParser$SentenciaIfContext.class
+com/compilador/CompiladorParser$ForInitPartContext.class
 com/compilador/CompiladorBaseListener.class
 com/compilador/Caminante.class
 com/compilador/CompiladorParser$SentenciaWhileContext.class
@@ -39,6 +41,7 @@ com/compilador/CompiladorParser$DeclaracionFuncionContext.class
 com/compilador/CompiladorParser$SentenciaContext.class
 com/compilador/GeneradorCodigo.class
 com/compilador/CompiladorParser$SentenciaForContext.class
+com/compilador/CompiladorParser$ForUpdatePartContext.class
 com/compilador/CompiladorParser$ParametroContext.class
 com/compilador/CompiladorParser$ExpDecimalContext.class
 com/compilador/CompiladorParser$ExpEnteroContext.class

@@ -88,6 +88,30 @@ public class CompiladorBaseListener implements CompiladorListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterForInitPart(CompiladorParser.ForInitPartContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitForInitPart(CompiladorParser.ForInitPartContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterForUpdatePart(CompiladorParser.ForUpdatePartContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitForUpdatePart(CompiladorParser.ForUpdatePartContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterDeclaracionVariableInternaFor(CompiladorParser.DeclaracionVariableInternaForContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -215,6 +239,18 @@ public class CompiladorBaseListener implements CompiladorListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitAsignacion(CompiladorParser.AsignacionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterAsignacionNoPyC(CompiladorParser.AsignacionNoPyCContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAsignacionNoPyC(CompiladorParser.AsignacionNoPyCContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

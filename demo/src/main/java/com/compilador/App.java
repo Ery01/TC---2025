@@ -93,7 +93,7 @@ public class App {
 
             // 3. VISUALIZACIÓN DEL ÁRBOL SINTÁCTICO (Opcional, puede comentar esta línea si no lo necesita)
             // generarImagenArbolSintactico(tree, parser);
-            // System.out.println("   📊 Ventana del árbol sintáctico abierta");
+            System.out.println("   📊 Ventana del árbol sintáctico abierta");
 
             // Listas para errores y advertencias semánticas y de código intermedio
             List<String> erroresSemanticos = new ArrayList<>();
