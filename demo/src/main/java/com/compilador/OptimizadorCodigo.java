@@ -14,13 +14,24 @@ import java.util.HashSet;
  */
 public class OptimizadorCodigo {
 
+    // --- Constantes de Color ANSI ---
+    public static final String RESET = "\u001B[0m";
+    public static final String RED = "\u001B[31m";
+    public static final String GREEN = "\u001B[32m";
+    public static final String YELLOW = "\u001B[33m";
+    public static final String BLUE = "\u001B[34m";
+    public static final String MAGENTA = "\u001B[35m";
+    public static final String CYAN = "\u001B[36m";
+    public static final String BOLD = "\u001B[1m";
+
+    // Patrones regex para parsear instrucciones TAC
     private static final Pattern PATRON_ASIGNACION = Pattern.compile("^(t\\d+|[a-zA-Z_][a-zA-Z0-9_]*) = (.+)$");
     private static final Pattern PATRON_OPERACION_BINARIA = Pattern.compile("^(t\\d+) = ([a-zA-Z_][a-zA-Z0-9_]*|t\\d+|\\d+(\\.\\d+)?|\".*\"|'.*'|true|false) ([+\\-*/%<>=!&|]{1,2}) ([a-zA-Z_][a-zA-Z0-9_]*|t\\d+|\\d+(\\.\\d+)?|\".*\"|'.*'|true|false)$");
     private static final Pattern PATRON_OPERACION_UNARIA = Pattern.compile("^(t\\d+) = !([a-zA-Z_][a-zA-Z0-9_]*|t\\d+|\\d+(\\.\\d+)?|true|false)$");
     private static final Pattern PATRON_ASIGNACION_LITERAL = Pattern.compile("^(t\\d+|[a-zA-Z_][a-zA-Z0-9_]*) = (\\d+(\\.\\d+)?|\".*\"|'.*'|true|false)$");
 
     public OptimizadorCodigo() {
-        System.out.println("✨ OPTIMIZADOR: Iniciado.");
+        System.out.println(CYAN + "✨ OPTIMIZADOR: Iniciado." + RESET);
     }
 
     /**
@@ -31,7 +42,7 @@ public class OptimizadorCodigo {
     public List<String> optimizar(List<String> codigoTac) {
         List<String> codigoOptimizado = new ArrayList<>(codigoTac);
 
-        System.out.println("✨ OPTIMIZADOR: Aplicando optimizaciones...");
+        System.out.println(CYAN + "✨ OPTIMIZADOR: Aplicando optimizaciones..." + RESET);
 
         for (int i = 0; i < 3; i++) {
             codigoOptimizado = aplicarPropagacionYPlegadoConstantes(codigoOptimizado);
@@ -39,7 +50,7 @@ public class OptimizadorCodigo {
             codigoOptimizado = aplicarEliminacionCodigoMuerto(codigoOptimizado);
         }
 
-        System.out.println("✨ OPTIMIZADOR: Optimizaciones completadas.");
+        System.out.println(CYAN + "✨ OPTIMIZADOR: Optimizaciones completadas." + RESET);
         return codigoOptimizado;
     }
 
@@ -53,7 +64,7 @@ public class OptimizadorCodigo {
         List<String> nuevoCodigo = new ArrayList<>();
         Map<String, Object> valoresConstantes = new HashMap<>();
 
-        System.out.println("  -> Aplicando Propagación/Plegado de Constantes...");
+        System.out.println(BLUE + "  -> Aplicando Propagación/Plegado de Constantes..." + RESET);
 
         for (String instruccion : codigo) {
             String instruccionOriginal = instruccion;
@@ -126,14 +137,15 @@ public class OptimizadorCodigo {
                         if (resultado != null) {
                             String nuevaInstruccionResultado = varTemporal + " = " + resultado;
                             if (!nuevaInstruccionResultado.equals(instruccionOriginal)) {
-                                System.out.println("    - Plegada: '" + instruccionOriginal + "' a '" + nuevaInstruccionResultado + "'");
+                                System.out.println(GREEN + "    - Plegada: '" + instruccionOriginal + "' a '" + nuevaInstruccionResultado + "'" + RESET);
                             }
                             instruccionModificada = nuevaInstruccionResultado;
                             valoresConstantes.put(varTemporal, resultado);
                         }
                     } catch (ArithmeticException e) {
-                        System.err.println("  ⚠️ Advertencia de optimización (Plegado): " + e.getMessage() + " en '" + instruccionOriginal + "'");
+                        System.err.println(YELLOW + "  ⚠️ Advertencia de optimización (Plegado): " + e.getMessage() + " en '" + instruccionOriginal + "'" + RESET);
                     } catch (Exception e) {
+
                     }
                 }
                 nuevoCodigo.add(instruccionModificada);
@@ -148,12 +160,13 @@ public class OptimizadorCodigo {
                         if (resultado != null) {
                             String nuevaInstruccionResultado = varTemporal + " = " + resultado;
                             if (!nuevaInstruccionResultado.equals(instruccionOriginal)) {
-                                System.out.println("    - Plegada (Unaria): '" + instruccionOriginal + "' a '" + nuevaInstruccionResultado + "'");
+                                System.out.println(GREEN + "    - Plegada (Unaria): '" + instruccionOriginal + "' a '" + nuevaInstruccionResultado + "'" + RESET);
                             }
                             instruccionModificada = nuevaInstruccionResultado;
                             valoresConstantes.put(varTemporal, resultado);
                         }
                     } catch (Exception e) {
+
                     }
                 }
                 nuevoCodigo.add(instruccionModificada);
@@ -183,7 +196,7 @@ public class OptimizadorCodigo {
                     Object val = valoresConstantes.get(valorAsignado);
                     String nuevaInstruccionAsignacion = nombreVar + " = " + val;
                     if (!nuevaInstruccionAsignacion.equals(instruccionOriginal)) {
-                        System.out.println("    - Propagada: '" + instruccionOriginal + "' a '" + nuevaInstruccionAsignacion + "'");
+                        System.out.println(GREEN + "    - Propagada: '" + instruccionOriginal + "' a '" + nuevaInstruccionAsignacion + "'" + RESET);
                     }
                     instruccionModificada = nuevaInstruccionAsignacion;
                     valoresConstantes.put(nombreVar, val);
@@ -206,7 +219,7 @@ public class OptimizadorCodigo {
      */
     private List<String> aplicarSimplificacionExpresiones(List<String> codigo) {
         List<String> nuevoCodigo = new ArrayList<>();
-        System.out.println("  -> Aplicando Simplificación de Expresiones...");
+        System.out.println(BLUE + "  -> Aplicando Simplificación de Expresiones..." + RESET);
 
         for (String instruccion : codigo) {
             Matcher matcherOperacionBinaria = PATRON_OPERACION_BINARIA.matcher(instruccion);
@@ -292,7 +305,7 @@ public class OptimizadorCodigo {
                 }
 
                 if (!nuevaInstruccion.equals(instruccionOriginal)) {
-                    System.out.println("    - Simplificada: '" + instruccionOriginal + "' a '" + nuevaInstruccion + "'");
+                    System.out.println(GREEN + "    - Simplificada: '" + instruccionOriginal + "' a '" + nuevaInstruccion + "'" + RESET);
                 }
             }
             nuevoCodigo.add(nuevaInstruccion);
@@ -311,7 +324,7 @@ public class OptimizadorCodigo {
     private List<String> aplicarEliminacionCodigoMuerto(List<String> codigo) {
         List<String> codigoOptimizadoFinal = new ArrayList<>();
         Set<String> instruccionesEliminadasLog = new HashSet<>();
-        System.out.println("  -> Aplicando Eliminación de Código Muerto...");
+        System.out.println(BLUE + "  -> Aplicando Eliminación de Código Muerto..." + RESET);
 
         Set<String> variablesVivas = new HashSet<>();
 
@@ -399,8 +412,7 @@ public class OptimizadorCodigo {
                 codigoOptimizadoFinal.add(instruccion);
             }
         }
-
-        instruccionesEliminadasLog.forEach(inst -> System.out.println("    - Eliminada instrucción muerta: " + inst));
+        instruccionesEliminadasLog.forEach(inst -> System.out.println(RED + "    - Eliminada instrucción muerta: " + inst + RESET));
 
         return codigoOptimizadoFinal;
     }

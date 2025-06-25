@@ -1,11 +1,9 @@
 package com.compilador;
 
-import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
-import java.util.stream.Collectors;
 
 /**
  * Listener mejorado para construir la tabla de símbolos y realizar verificación de tipos
@@ -15,10 +13,9 @@ public class SimbolosListener extends CompiladorBaseListener {
     private TablaSimbolos tablaSimbolos;
     private List<String> warnings;
     private List<String> errores;
-    private String tipoRetornoActual; // Para verificar return dentro de funciones
-
+    private String tipoRetornoActual;
     private Stack<String> ambitoStack;
-    private int bloqueAnonimoCounter; // Para dar nombres unicos a los bloques anonimos
+    private int bloqueAnonimoCounter;
 
     public SimbolosListener() {
         this.tablaSimbolos = new TablaSimbolos();
@@ -157,7 +154,7 @@ public class SimbolosListener extends CompiladorBaseListener {
             try {
                 Object evaluatedValue = tempEvaluador.visit(ctx.expresion());
                 if (evaluatedValue != null) {
-                    simbolo.setValor(evaluatedValue); // Almacenar el valor si es una constante evaluable
+                    simbolo.setValor(evaluatedValue);
                 }
             } catch (Exception e) {
 
@@ -239,7 +236,7 @@ public class SimbolosListener extends CompiladorBaseListener {
         // Caso 3: Conversiones implícitas descendentes con advertencia
         if (tipoVariable.equals("int") && tipoExpresion.equals("double")) {
             warnings.add("Advertencia en línea " + linea + ": posible pérdida de datos al asignar 'double' a 'int'.");
-            return true; // Permitimos la asignación con advertencia
+            return true;
         }
 
         return false;

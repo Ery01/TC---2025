@@ -12,9 +12,21 @@ import java.util.Comparator;
  */
 public class TablaSimbolos {
 
+    public static final String RESET = "\u001B[0m";
+    public static final String BLACK = "\u001B[30m";
+    public static final String RED = "\u001B[31m";
+    public static final String GREEN = "\u001B[32m";
+    public static final String YELLOW = "\u001B[33m";
+    public static final String BLUE = "\u001B[34m";
+    public static final String MAGENTA = "\u001B[35m";
+    public static final String CYAN = "\u001B[36m";
+    public static final String WHITE = "\u001B[37m";
+    public static final String BOLD = "\u001B[1m";
+    public static final String UNDERLINE = "\u001B[4m";
+
     public static class Simbolo {
         private String nombre;
-        private String tipo;        // int, char, double, void
+        private String tipo;        // int, char, double, void, bool
         private String categoria;   // variable, funcion, parametro
         private int linea;
         private int columna;
@@ -146,19 +158,52 @@ public class TablaSimbolos {
     }
 
     /**
-     * Imprime la tabla de símbolos.
+     * Imprime la tabla de símbolos con formato y colores.
      */
     public void imprimir() {
-        System.out.println("\n=== TABLA DE SÍMBOLOS ===");
-        System.out.printf("%-15s %-10s %-15s %-8s %-10s %-15s %-12s %-12s %s\n",
+        System.out.printf(MAGENTA + BOLD + "%-15s %-10s %-15s %-8s %-10s %-15s %-12s %-12s %s\n" + RESET,
                 "NOMBRE", "TIPO", "CAT.", "LÍNEA", "COLUMNA", "ÁMBITO", "INICIALIZADA", "USADA", "PARÁMETROS");
-        System.out.println("--------------------------------------------------------------------------------------------------------------------");
+        System.out.println(MAGENTA + BOLD + "--------------------------------------------------------------------------------------------------------------------" + RESET);
 
-        simbolosMap.values().stream()
-                .sorted(Comparator.comparing(Simbolo::getAmbito)
+        simbolosMap.values().stream().sorted(Comparator.comparing(Simbolo::getAmbito)
                         .thenComparing(Simbolo::getLinea)
                         .thenComparing(Simbolo::getColumna))
-                .forEach(System.out::println);
+                .forEach(simbolo -> {
+                    String colorSimbolo = RESET;
+
+                    if (!simbolo.isUsada() && simbolo.getCategoria().equals("variable")) {
+                        colorSimbolo = YELLOW;
+                    } else if (simbolo.getCategoria().equals("funcion") || simbolo.getCategoria().equals("parametro")) {
+                        colorSimbolo = BLUE;
+                    } else if (simbolo.getCategoria().equals("variable") && simbolo.isUsada()) {
+                        colorSimbolo = WHITE;
+                    }
+
+                    System.out.printf("%s%-15s %-10s %-15s %-8d %-10d %-15s ",
+                            colorSimbolo,
+                            simbolo.getNombre(),
+                            simbolo.getTipo(),
+                            simbolo.getCategoria(),
+                            simbolo.getLinea(),
+                            simbolo.getColumna(),
+                            simbolo.getAmbito());
+
+                    System.out.print((simbolo.isInicializada() ? GREEN : RED) + String.format("%-12b", simbolo.isInicializada()) + RESET + " ");
+                    System.out.print((simbolo.isUsada() ? GREEN : RED) + String.format("%-12b", simbolo.isUsada()) + RESET);
+
+                    if (simbolo.getCategoria().equals("funcion") && !simbolo.getParametros().isEmpty()) {
+                        StringBuilder params = new StringBuilder(" (");
+                        for (int i = 0; i < simbolo.getParametros().size(); i++) {
+                            params.append(simbolo.getParametros().get(i));
+                            if (i < simbolo.getParametros().size() - 1) {
+                                params.append(", ");
+                            }
+                        }
+                        params.append(")");
+                        System.out.print(BLUE + params.toString() + RESET);
+                    }
+                    System.out.println(RESET);
+                });
     }
 
     /**

@@ -1,4 +1,4 @@
-// Código de tres direcciones generado automáticamente
+// Codigo de tres direcciones generado automaticamente
 // Archivo: ejemplo_codigo_intermedio_original.txt
 // Total de instrucciones: 45
 

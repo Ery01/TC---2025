@@ -10,6 +10,17 @@ import java.util.Map;
  */
 public class GeneradorCodigo {
 
+    // --- Constantes de Color ANSI ---
+    public static final String RESET = "\u001B[0m";
+    public static final String RED = "\u001B[31m";
+    public static final String GREEN = "\u001B[32m";
+    public static final String YELLOW = "\u001B[33m";
+    public static final String BLUE = "\u001B[34m";
+    public static final String MAGENTA = "\u001B[35m";
+    public static final String CYAN = "\u001B[36m";
+    public static final String WHITE = "\u001B[37m";
+    public static final String BOLD = "\u001B[1m";
+
     private List<String> codigo;
     private int tempCounter;
     private int labelCounter;
@@ -106,13 +117,36 @@ public class GeneradorCodigo {
     }
 
     /**
-     * Imprime el código generado en la consola, con números de línea.
+     * Imprime el código generado en la consola, con números de línea y colores.
      */
     public void imprimirCodigo() {
         for (int i = 0; i < codigo.size(); i++) {
-            System.out.printf("%3d: %s\n", i, codigo.get(i));
+            String instruccion = codigo.get(i);
+            String color = RESET; // Default color
+
+            if (instruccion.contains("func_") && instruccion.endsWith(":")) {
+                color = CYAN + BOLD; // Function entry points
+            } else if (instruccion.startsWith("end_func_")) {
+                color = CYAN + BOLD; // Function end points
+            } else if (instruccion.contains(" = ")) {
+                color = WHITE; // Assignments
+            } else if (instruccion.startsWith("if ") || instruccion.startsWith("goto ")) {
+                color = BLUE; // Control flow
+            } else if (instruccion.endsWith(":")) {
+                color = MAGENTA; // Labels
+            } else if (instruccion.startsWith("return ")) {
+                color = GREEN; // Return statements
+            } else if (instruccion.startsWith("push ")) {
+                color = YELLOW; // Push parameters
+            } else if (instruccion.contains(" = call ")) {
+                color = GREEN; // Function calls with return
+            } else if (instruccion.contains("call ")) {
+                color = GREEN; // Function calls without return
+            }
+
+            System.out.printf(color + "%3d: %s\n" + RESET, i, instruccion);
         }
-        System.out.println("Total instrucciones: " + codigo.size());
+        System.out.println(GREEN + "Total instrucciones: " + RESET + codigo.size());
     }
 
     /**
@@ -127,10 +161,10 @@ public class GeneradorCodigo {
     public void imprimirTipos() { }
 
     /**
-     * Imprime estadísticas sobre el código intermedio generado.
+     * Imprime estadísticas sobre el código intermedio generado con colores.
      */
     public void imprimirEstadisticas() {
-        System.out.println("\n📊 ESTADÍSTICAS:");
+        System.out.println(CYAN + BOLD + "\n📊 ESTADÍSTICAS:" + RESET);
         System.out.println("   - Temporales creados: " + tempCounter);
         System.out.println("   - Etiquetas creadas: " + labelCounter);
         System.out.println("   - Instrucciones totales: " + codigo.size());

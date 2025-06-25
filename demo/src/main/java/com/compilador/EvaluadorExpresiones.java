@@ -155,11 +155,11 @@ public class EvaluadorExpresiones extends CompiladorBaseVisitor<Object> {
                     break;
                 case "&&":
                     if (left instanceof Boolean && right instanceof Boolean) return (Boolean) left && (Boolean) right;
-                    if (left instanceof Integer && right instanceof Integer) return (((Integer) left) != 0) && (((Integer) right) != 0); // Asumiendo 0=false, !0=true
+                    if (left instanceof Integer && right instanceof Integer) return (((Integer) left) != 0) && (((Integer) right) != 0);
                     break;
                 case "||":
                     if (left instanceof Boolean && right instanceof Boolean) return (Boolean) left || (Boolean) right;
-                    if (left instanceof Integer && right instanceof Integer) return (((Integer) left) != 0) || (((Integer) right) != 0); // Asumiendo 0=false, !0=true
+                    if (left instanceof Integer && right instanceof Integer) return (((Integer) left) != 0) || (((Integer) right) != 0);
                     break;
             }
         } catch (ClassCastException e) {

@@ -8,6 +8,9 @@ import java.util.Stack;
 
 public class Caminante extends CompiladorBaseVisitor<Object> {
 
+    public static final String RESET = "\u001B[0m";
+    public static final String YELLOW = "\u001B[33m";
+
     private TablaSimbolos tablaSimbolos;
     private List<String> errores;
     private List<String> warnings;
@@ -71,9 +74,9 @@ public class Caminante extends CompiladorBaseVisitor<Object> {
         if (resultadoCondicion instanceof Boolean) {
             boolean condicion = (Boolean) resultadoCondicion;
             if (!condicion) {
-                agregarWarning("Advertencia en línea " + ctx.getStart().getLine() + ": Condición falsa constante en bucle `while`. Este bucle nunca se ejecutará.");
+                agregarWarning(YELLOW + "Advertencia en línea " + ctx.getStart().getLine() + ": Condición falsa constante en bucle `while`. Este bucle nunca se ejecutará." + RESET);
             } else {
-                agregarWarning("Advertencia en línea " + ctx.getStart().getLine() + ": Condición verdadera constante en bucle `while`. Posible bucle infinito detectado.");
+                agregarWarning(YELLOW + "Advertencia en línea " + ctx.getStart().getLine() + ": Condición verdadera constante en bucle `while`. Posible bucle infinito detectado." + RESET);
             }
         }
         return visit(ctx.bloque());
@@ -97,9 +100,9 @@ public class Caminante extends CompiladorBaseVisitor<Object> {
         if (resultadoCondicion instanceof Boolean) {
             boolean condicion = (Boolean) resultadoCondicion;
             if (!condicion) {
-                agregarWarning("Advertencia en línea " + ctx.getStart().getLine() + ": Condición falsa constante en bucle `for`. Este bucle nunca se ejecutará.");
+                agregarWarning(YELLOW + "Advertencia en línea " + ctx.getStart().getLine() + ": Condición falsa constante en bucle `for`. Este bucle nunca se ejecutará." + RESET);
             } else {
-                agregarWarning("Advertencia en línea " + ctx.getStart().getLine() + ": Condición verdadera constante en bucle `for`. Posible bucle infinito detectado.");
+                agregarWarning(YELLOW + "Advertencia en línea " + ctx.getStart().getLine() + ": Condición verdadera constante en bucle `for`. Posible bucle infinito detectado." + RESET);
             }
         }
 
